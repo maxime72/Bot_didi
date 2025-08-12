@@ -1,4 +1,6 @@
+// ====================
 // Chargement des variables d'environnement
+// ====================
 require("dotenv").config();
 
 // ====================
@@ -49,7 +51,8 @@ const guildRoles = [
     "Le Clan",
     "La Forge",
     "G H O S T-a",
-    "Ambitions"
+    "Ambitions",
+    "Test" // ➕ Ajout pour tester
 ];
 
 const client = new Client({
@@ -66,6 +69,15 @@ client.once(Events.ClientReady, async () => {
     const channel = await client.channels.fetch(PANEL_CHANNEL_ID);
     if (!channel) {
         console.error("⚠️ Salon du panneau introuvable !");
+        return;
+    }
+
+    // Vérifier si le panneau existe déjà (éviter les doublons)
+    const messages = await channel.messages.fetch({ limit: 10 });
+    const panneauExiste = messages.some(msg => msg.content.includes("📢 **Alerte Guildes**"));
+
+    if (panneauExiste) {
+        console.log("ℹ️ Panneau déjà présent, aucun nouvel envoi.");
         return;
     }
 
@@ -89,7 +101,7 @@ client.once(Events.ClientReady, async () => {
     });
 
     await channel.send({
-        content: "📢 **Alerte Guildes**\nCliquez sur le bouton correspondant à la guilde attaqué pour envoyer une alerte dans 🐎║défense-perco.",
+        content: "📢 **Alerte Guildes**\nCliquez sur le bouton correspondant à la guilde attaquée pour envoyer une alerte dans 🐎║défense-perco.",
         components: rows
     });
 
@@ -119,5 +131,5 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await interaction.reply({ content: `✅ Alerte envoyée dans ${alertChannel}`, ephemeral: true });
 });
 
-// Connexion avec le token depuis Render (variable d'environnement)
+// Connexion avec le token depuis Render
 client.login(process.env.DISCORD_TOKEN);
