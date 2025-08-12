@@ -1,8 +1,35 @@
-require('dotenv').config();
+// Chargement des variables d'environnement
+require("dotenv").config();
+
+// ====================
+// SERVEUR EXPRESS (pour Render)
+// ====================
+const express = require("express");
+const app = express();
+
+app.get("/", (req, res) => {
+  res.send("Bot Didi is running!");
+});
+
+app.listen(3000, () => {
+  console.log("✅ Web server is running on port 3000");
+});
+
+// ====================
+// KEEP-ALIVE (Ping toutes les 10 min)
+// ====================
+const fetch = require("node-fetch");
+setInterval(() => {
+  fetch("https://TON-NOM-DE-PROJET.onrender.com").catch(err =>
+    console.log("Ping failed", err)
+  );
+}, 10 * 60 * 1000); // 10 minutes
+
+// ====================
+// BOT DISCORD
+// ====================
 const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events } = require("discord.js");
 
-// Variables depuis .env
-const TOKEN = process.env.DISCORD_TOKEN;
 const PANEL_CHANNEL_ID = "1404539663322054718"; // 🐎║ping-perco
 const ALERT_CHANNEL_ID = "1402339092385107999"; // 🐎║défense-perco
 
@@ -54,7 +81,7 @@ client.once(Events.ClientReady, async () => {
 
         currentRow.addComponents(button);
 
-        // Max 5 boutons par ligne
+        // 5 boutons max par ligne
         if ((index + 1) % 5 === 0 || index === guildRoles.length - 1) {
             rows.push(currentRow);
             currentRow = new ActionRowBuilder();
@@ -62,7 +89,7 @@ client.once(Events.ClientReady, async () => {
     });
 
     await channel.send({
-        content: "📢 **Alerte Guildes**\nCliquez sur le bouton correspondant à la guilde attaquée pour envoyer une alerte dans 🐎║défense-perco.",
+        content: "📢 **Alerte Guildes**\nCliquez sur le bouton correspondant à la guilde attaqué pour envoyer une alerte dans 🐎║défense-perco.",
         components: rows
     });
 
@@ -92,5 +119,5 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await interaction.reply({ content: `✅ Alerte envoyée dans ${alertChannel}`, ephemeral: true });
 });
 
-// Connexion avec le token de .env
-client.login(TOKEN);
+// Connexion avec le token depuis Render (variable d'environnement)
+client.login(process.env.DISCORD_TOKEN);
