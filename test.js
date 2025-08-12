@@ -52,7 +52,7 @@ const guildRoles = [
     "La Forge",
     "G H O S T-a",
     "Ambitions",
-    "Test" // ➕ Ajout pour tester
+    "TESTAGE DE BOT" // ➕ Ajout pour tester
 ];
 
 const client = new Client({
