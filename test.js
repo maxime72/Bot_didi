@@ -20,7 +20,7 @@ app.listen(3000, () => {
 // ====================
 const fetch = require("node-fetch");
 setInterval(() => {
-  fetch("https://TON-NOM-DE-PROJET.onrender.com").catch(err =>
+  fetch("https://bot-didi-h5gm.onrender.com").catch(err =>
     console.log("Ping failed", err)
   );
 }, 10 * 60 * 1000); // 10 minutes
