@@ -55,9 +55,9 @@ const guildRoles = [
     "TESTAGE DE BOT" // 🔹 Ajout pour tests
 ];
 
-// Cooldown : 60 secondes par utilisateur
+// Cooldown : 15 secondes par utilisateur
 const cooldowns = new Map();
-const COOLDOWN_MS = 60 * 1000;
+const COOLDOWN_MS = 15 * 1000;
 
 const client = new Client({
     intents: [
