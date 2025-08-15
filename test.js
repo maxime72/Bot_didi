@@ -124,4 +124,39 @@ client.on(Events.InteractionCreate, async (interaction) => {
         if (now < expiration) {
             const restant = ((expiration - now) / 1000).toFixed(1);
             return interaction.reply({
-                content: `⏳ Tu dois
+                content: `⏳ Tu dois attendre encore **${restant}s** avant de réutiliser ce bouton.`,
+                ephemeral: true
+            });
+        }
+    }
+
+    // Met à jour le cooldown
+    cooldowns.set(key, now + cooldownTime);
+
+    // Récupère le rôle et le salon
+    const roleName = interaction.customId.replace("alert_", "").replace(/_/g, " ");
+    const role = interaction.guild.roles.cache.find(r => r.name === roleName);
+    if (!role) {
+        return interaction.reply({ content: `⚠️ Rôle **${roleName}** introuvable.`, ephemeral: true });
+    }
+
+    const alertChannel = await interaction.guild.channels.fetch(ALERT_CHANNEL_ID);
+    if (!alertChannel) {
+        return interaction.reply({ content: "⚠️ Salon d’alerte introuvable.", ephemeral: true });
+    }
+
+    // Envoi de l’alerte avec pseudo serveur
+    await alertChannel.send({
+        content: `🚨 ${role} vous êtes attaqués ! (Signalé par **${interaction.member.displayName}**)`,
+        allowedMentions: { roles: [role.id] }
+    });
+
+    // Réponse au clic
+    await interaction.reply({
+        content: `✅ Alerte envoyée dans ${alertChannel}`,
+        ephemeral: true
+    });
+});
+
+// Connexion avec le token depuis Render
+client.login(process.env.DISCORD_TOKEN);
