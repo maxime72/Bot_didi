@@ -35,7 +35,7 @@ const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
 const PANEL_CHANNEL_ID = "1404539663322054718"; // 🐎║ping-perco
 const ALERT_CHANNEL_ID = "1402339092385107999"; // 🐎║défense-perco
 
-// Liste des guildes (noms EXACTS des rôles dans Discord)
+// Liste des guildes (noms EXACTS des rôles dans Discord) + Test
 const guildRoles = [
     "Tempest",
     "YGGDRASIL",
@@ -51,12 +51,8 @@ const guildRoles = [
     "La Forge",
     "G H O S T-a",
     "Ambitions",
-    "TESTAGE DE BOT" // 🔹 Ajout pour tests
+    "TESTAGE DE BOT" // ajout pour test
 ];
-
-// Cooldown : 5 secondes par utilisateur
-const cooldowns = new Map();
-const COOLDOWN_MS = 5 * 1000;
 
 const client = new Client({
     intents: [
@@ -96,6 +92,7 @@ client.once(Events.ClientReady, async () => {
 
         currentRow.addComponents(button);
 
+        // 5 boutons max par ligne
         if ((index + 1) % 5 === 0 || index === guildRoles.length - 1) {
             rows.push(currentRow);
             currentRow = new ActionRowBuilder();
@@ -110,23 +107,14 @@ client.once(Events.ClientReady, async () => {
     console.log("✅ Panneau envoyé !");
 });
 
+// ====================
+// COOLDOWN PAR BOUTON
+// ====================
+const COOLDOWN_SECONDS = 15;
+const cooldowns = new Map();
+
 client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton()) return;
-
-    const now = Date.now();
-    const userId = interaction.user.id;
-
-    // Gestion du cooldown
-    if (cooldowns.has(userId) && (now - cooldowns.get(userId)) < COOLDOWN_MS) {
-        const timeLeft = Math.ceil((COOLDOWN_MS - (now - cooldowns.get(userId))) / 1000);
-        await interaction.reply({ 
-            content: `⏳ Merci d'attendre encore ${timeLeft} secondes avant de réutiliser ce bouton.`, 
-            ephemeral: true 
-        });
-        return; // ⛔ Stop ici
-    }
-
-    cooldowns.set(userId, now);
 
     const roleName = interaction.customId.replace("alert_", "").replace(/_/g, " ");
     const role = interaction.guild.roles.cache.find(r => r.name === roleName);
@@ -135,21 +123,36 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return interaction.reply({ content: `⚠️ Rôle **${roleName}** introuvable.`, ephemeral: true });
     }
 
-    const alertChannel = await interaction.guild.channels.fetch(ALERT_CHANNEL_ID);
-    if (!alertChannel) {
-        return interaction.reply({ content: "⚠️ Salon d’alerte introuvable.", ephemeral: true });
+    const now = Date.now();
+    const cooldownKey = `${interaction.user.id}_${interaction.customId}`;
+    const lastUsed = cooldowns.get(cooldownKey) || 0;
+    const remaining = Math.ceil((lastUsed + COOLDOWN_SECONDS * 1000 - now) / 1000);
+
+    if (remaining > 0) {
+        return interaction.reply({
+            content: `⏳ Merci d’attendre encore **${remaining} secondes** avant de réutiliser le bouton **${roleName}**.`,
+            ephemeral: true
+        });
     }
 
-    const pseudoServeur = interaction.member.displayName; // 🔹 Pseudo sur le serveur
+    cooldowns.set(cooldownKey, now);
+
+    // Prévenir erreur "Unknown interaction"
+    await interaction.deferReply({ ephemeral: true });
+
+    const alertChannel = await interaction.guild.channels.fetch(ALERT_CHANNEL_ID);
+    if (!alertChannel) {
+        return interaction.editReply({ content: "⚠️ Salon d’alerte introuvable." });
+    }
+
+    const pseudoServeur = interaction.member?.nickname || interaction.user.username;
 
     await alertChannel.send({
-        content: `🚨 ${role} vous êtes attaqués ! (Bouton cliqué par **${pseudoServeur}**)`,
+        content: `🚨 ${role} vous êtes attaqués ! (signalé par **${pseudoServeur}**)`,
         allowedMentions: { roles: [role.id] }
     });
 
-    await interaction.reply({ content: `✅ Alerte envoyée dans ${alertChannel}`, ephemeral: true });
-
-    console.log(`📌 Bouton "${roleName}" cliqué par ${pseudoServeur}`);
+    await interaction.editReply({ content: `✅ Alerte envoyée dans ${alertChannel}` });
 });
 
 // Connexion avec le token depuis Render
