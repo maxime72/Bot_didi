@@ -48,7 +48,6 @@ const guildRoles = [
     "Red Bull",
     "E Q U I N O X",
     "Les Chuchoteurs",
-    "Le Clan",
     "La Forge",
     "G H O S T-a",
     "Ambitions",
