@@ -35,7 +35,7 @@ const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
 const PANEL_CHANNEL_ID = "1404539663322054718"; // 🐎║ping-perco
 const ALERT_CHANNEL_ID = "1402339092385107999"; // 🐎║défense-perco
 
-// Liste des guildes (noms EXACTS des rôles dans Discord)
+// Liste des guildes (noms EXACTS des rôles dans Discord) + Test
 const guildRoles = [
     "Tempest",
     "YGGDRASIL",
@@ -51,12 +51,8 @@ const guildRoles = [
     "La Forge",
     "G H O S T-a",
     "Ambitions",
-    "TESTAGE DE BOT" // 🔹 ajout pour tes essais
+    "TESTAGE DE BOT"
 ];
-
-// Cooldown par utilisateur et par bouton
-const cooldowns = new Map();
-const COOLDOWN_SECONDS = 15;
 
 const client = new Client({
     intents: [
@@ -65,6 +61,9 @@ const client = new Client({
         GatewayIntentBits.MessageContent
     ]
 });
+
+// Cooldown par bouton et utilisateur
+const cooldowns = new Map(); // { userId_buttonId: timestamp }
 
 client.once(Events.ClientReady, async () => {
     console.log(`✅ Connecté en tant que ${client.user.tag}`);
@@ -75,7 +74,7 @@ client.once(Events.ClientReady, async () => {
         return;
     }
 
-    // Vérifier si le panneau existe déjà (éviter les doublons)
+    // Vérifier si le panneau existe déjà
     const messages = await channel.messages.fetch({ limit: 10 });
     const panneauExiste = messages.some(msg => msg.content.includes("📢 **Alerte Guildes**"));
 
@@ -96,7 +95,6 @@ client.once(Events.ClientReady, async () => {
 
         currentRow.addComponents(button);
 
-        // 5 boutons max par ligne
         if ((index + 1) % 5 === 0 || index === guildRoles.length - 1) {
             rows.push(currentRow);
             currentRow = new ActionRowBuilder();
@@ -114,41 +112,16 @@ client.once(Events.ClientReady, async () => {
 client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton()) return;
 
-    const roleName = interaction.customId.replace("alert_", "").replace(/_/g, " ");
-    const role = interaction.guild.roles.cache.find(r => r.name === roleName);
-
-    if (!role) {
-        return interaction.reply({ content: `⚠️ Rôle **${roleName}** introuvable.`, ephemeral: true });
-    }
-
-    // 🔹 Cooldown spécifique à l'utilisateur et au bouton
+    const userId = interaction.user.id;
+    const buttonId = interaction.customId; // ex: alert_Tempest
+    const key = `${userId}_${buttonId}`;
     const now = Date.now();
-    const cooldownKey = `${interaction.user.id}_${interaction.customId}`;
-    const lastUsed = cooldowns.get(cooldownKey) || 0;
-    const remaining = Math.ceil((lastUsed + COOLDOWN_SECONDS * 1000 - now) / 1000);
+    const cooldownTime = 15 * 1000; // 15 secondes
 
-    if (remaining > 0) {
-        await interaction.reply({
-            content: `⏳ Merci d’attendre encore **${remaining} secondes** avant de réutiliser le bouton **${roleName}**.`,
-            ephemeral: true
-        });
-        return; // ⛔ Stoppe l'exécution pour éviter d'envoyer l'alerte
-    }
-
-    cooldowns.set(cooldownKey, now);
-
-    const alertChannel = await interaction.guild.channels.fetch(ALERT_CHANNEL_ID);
-    if (!alertChannel) {
-        return interaction.reply({ content: "⚠️ Salon d’alerte introuvable.", ephemeral: true });
-    }
-
-    await alertChannel.send({
-        content: `🚨 ${role} vous êtes attaqués ! (Ping déclenché par **${interaction.member.displayName}**)`,
-        allowedMentions: { roles: [role.id] }
-    });
-
-    await interaction.reply({ content: `✅ Alerte envoyée dans ${alertChannel}`, ephemeral: true });
-});
-
-// Connexion avec le token depuis Render
-client.login(process.env.DISCORD_TOKEN);
+    // Vérif cooldown
+    if (cooldowns.has(key)) {
+        const expiration = cooldowns.get(key);
+        if (now < expiration) {
+            const restant = ((expiration - now) / 1000).toFixed(1);
+            return interaction.reply({
+                content: `⏳ Tu dois
