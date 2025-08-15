@@ -35,7 +35,7 @@ const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
 const PANEL_CHANNEL_ID = "1404539663322054718"; // 🐎║ping-perco
 const ALERT_CHANNEL_ID = "1402339092385107999"; // 🐎║défense-perco
 
-// Liste des guildes (noms EXACTS des rôles dans Discord) + Test
+// Liste des guildes (noms EXACTS des rôles dans Discord)
 const guildRoles = [
     "Tempest",
     "YGGDRASIL",
@@ -51,8 +51,12 @@ const guildRoles = [
     "La Forge",
     "G H O S T-a",
     "Ambitions",
-    "TESTAGE DE BOT" // ajout pour test
+    "TESTAGE DE BOT" // 🔹 ajout pour tes essais
 ];
+
+// Cooldown par utilisateur et par bouton
+const cooldowns = new Map();
+const COOLDOWN_SECONDS = 15;
 
 const client = new Client({
     intents: [
@@ -107,12 +111,6 @@ client.once(Events.ClientReady, async () => {
     console.log("✅ Panneau envoyé !");
 });
 
-// ====================
-// COOLDOWN PAR BOUTON
-// ====================
-const COOLDOWN_SECONDS = 15;
-const cooldowns = new Map();
-
 client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton()) return;
 
@@ -123,36 +121,33 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return interaction.reply({ content: `⚠️ Rôle **${roleName}** introuvable.`, ephemeral: true });
     }
 
+    // 🔹 Cooldown spécifique à l'utilisateur et au bouton
     const now = Date.now();
     const cooldownKey = `${interaction.user.id}_${interaction.customId}`;
     const lastUsed = cooldowns.get(cooldownKey) || 0;
     const remaining = Math.ceil((lastUsed + COOLDOWN_SECONDS * 1000 - now) / 1000);
 
     if (remaining > 0) {
-        return interaction.reply({
+        await interaction.reply({
             content: `⏳ Merci d’attendre encore **${remaining} secondes** avant de réutiliser le bouton **${roleName}**.`,
             ephemeral: true
         });
+        return; // ⛔ Stoppe l'exécution pour éviter d'envoyer l'alerte
     }
 
     cooldowns.set(cooldownKey, now);
 
-    // Prévenir erreur "Unknown interaction"
-    await interaction.deferReply({ ephemeral: true });
-
     const alertChannel = await interaction.guild.channels.fetch(ALERT_CHANNEL_ID);
     if (!alertChannel) {
-        return interaction.editReply({ content: "⚠️ Salon d’alerte introuvable." });
+        return interaction.reply({ content: "⚠️ Salon d’alerte introuvable.", ephemeral: true });
     }
 
-    const pseudoServeur = interaction.member?.nickname || interaction.user.username;
-
     await alertChannel.send({
-        content: `🚨 ${role} vous êtes attaqués ! (signalé par **${pseudoServeur}**)`,
+        content: `🚨 ${role} vous êtes attaqués ! (Ping déclenché par **${interaction.member.displayName}**)`,
         allowedMentions: { roles: [role.id] }
     });
 
-    await interaction.editReply({ content: `✅ Alerte envoyée dans ${alertChannel}` });
+    await interaction.reply({ content: `✅ Alerte envoyée dans ${alertChannel}`, ephemeral: true });
 });
 
 // Connexion avec le token depuis Render
