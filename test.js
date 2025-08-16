@@ -48,10 +48,11 @@ const guildRoles = [
     "Red Bull",
     "E Q U I N O X",
     "Les Chuchoteurs",
+    "Le Clan",
     "La Forge",
     "G H O S T-a",
     "Ambitions",
-    "TESTAGE DE BOT"
+    "Test"
 ];
 
 const client = new Client({
@@ -113,7 +114,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton()) return;
 
     const userId = interaction.user.id;
+    const pseudo = interaction.member.displayName; // Pseudo serveur
     const buttonId = interaction.customId; // ex: alert_Tempest
+    const roleName = buttonId.replace("alert_", "").replace(/_/g, " ");
     const key = `${userId}_${buttonId}`;
     const now = Date.now();
     const cooldownTime = 15 * 1000; // 15 secondes
@@ -123,6 +126,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         const expiration = cooldowns.get(key);
         if (now < expiration) {
             const restant = ((expiration - now) / 1000).toFixed(1);
+            console.log(`[⏳ ${new Date().toLocaleTimeString()}] ${pseudo} a tenté d’utiliser "${roleName}" mais est en cooldown (${restant}s restant).`);
             return interaction.reply({
                 content: `⏳ Tu dois attendre encore **${restant}s** avant de réutiliser ce bouton.`,
                 ephemeral: true
@@ -134,7 +138,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
     cooldowns.set(key, now + cooldownTime);
 
     // Récupère le rôle et le salon
-    const roleName = interaction.customId.replace("alert_", "").replace(/_/g, " ");
     const role = interaction.guild.roles.cache.find(r => r.name === roleName);
     if (!role) {
         return interaction.reply({ content: `⚠️ Rôle **${roleName}** introuvable.`, ephemeral: true });
@@ -145,11 +148,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return interaction.reply({ content: "⚠️ Salon d’alerte introuvable.", ephemeral: true });
     }
 
-    // Envoi de l’alerte avec pseudo serveur
+    // Envoi de l’alerte
     await alertChannel.send({
-        content: `🚨 ${role} vous êtes attaqués ! (Signalé par **${interaction.member.displayName}**)`,
+        content: `🚨 ${role} vous êtes attaqués ! (Signalé par **${pseudo}**)`,
         allowedMentions: { roles: [role.id] }
     });
+
+    console.log(`[🚨 ${new Date().toLocaleTimeString()}] ${pseudo} a envoyé une alerte pour "${roleName}".`);
 
     // Réponse au clic
     await interaction.reply({
