@@ -35,7 +35,7 @@ const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
 const PANEL_CHANNEL_ID = "1404539663322054718"; // 🐎║ping-perco
 const ALERT_CHANNEL_ID = "1402339092385107999"; // 🐎║défense-perco
 
-// Liste des guildes (noms EXACTS des rôles dans Discord) + Test
+// Liste des guildes (noms EXACTS des rôles dans Discord)
 const guildRoles = [
     "Tempest",
     "YGGDRASIL",
@@ -48,11 +48,10 @@ const guildRoles = [
     "Red Bull",
     "E Q U I N O X",
     "Les Chuchoteurs",
-    "Le Clan",
     "La Forge",
     "G H O S T-a",
     "Ambitions",
-    "Test"
+    "TESTAGE DE BOT" // Nouveau rôle test
 ];
 
 const client = new Client({
@@ -63,8 +62,8 @@ const client = new Client({
     ]
 });
 
-// Cooldown par bouton et utilisateur
-const cooldowns = new Map(); // { userId_buttonId: timestamp }
+// Cooldowns : { "userId_roleName": timestamp }
+const cooldowns = new Map();
 
 client.once(Events.ClientReady, async () => {
     console.log(`✅ Connecté en tant que ${client.user.tag}`);
@@ -75,7 +74,7 @@ client.once(Events.ClientReady, async () => {
         return;
     }
 
-    // Vérifier si le panneau existe déjà
+    // Vérifier si le panneau existe déjà (éviter les doublons)
     const messages = await channel.messages.fetch({ limit: 10 });
     const panneauExiste = messages.some(msg => msg.content.includes("📢 **Alerte Guildes**"));
 
@@ -96,6 +95,7 @@ client.once(Events.ClientReady, async () => {
 
         currentRow.addComponents(button);
 
+        // 5 boutons max par ligne
         if ((index + 1) % 5 === 0 || index === guildRoles.length - 1) {
             rows.push(currentRow);
             currentRow = new ActionRowBuilder();
@@ -113,54 +113,60 @@ client.once(Events.ClientReady, async () => {
 client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton()) return;
 
-    const userId = interaction.user.id;
-    const pseudo = interaction.member.displayName; // Pseudo serveur
-    const buttonId = interaction.customId; // ex: alert_Tempest
-    const roleName = buttonId.replace("alert_", "").replace(/_/g, " ");
-    const key = `${userId}_${buttonId}`;
-    const now = Date.now();
-    const cooldownTime = 15 * 1000; // 15 secondes
-
-    // Vérif cooldown
-    if (cooldowns.has(key)) {
-        const expiration = cooldowns.get(key);
-        if (now < expiration) {
-            const restant = ((expiration - now) / 1000).toFixed(1);
-            console.log(`[⏳ ${new Date().toLocaleTimeString()}] ${pseudo} a tenté d’utiliser "${roleName}" mais est en cooldown (${restant}s restant).`);
-            return interaction.reply({
-                content: `⏳ Tu dois attendre encore **${restant}s** avant de réutiliser ce bouton.`,
-                ephemeral: true
-            });
-        }
-    }
-
-    // Met à jour le cooldown
-    cooldowns.set(key, now + cooldownTime);
-
-    // Récupère le rôle et le salon
+    const roleName = interaction.customId.replace("alert_", "").replace(/_/g, " ");
     const role = interaction.guild.roles.cache.find(r => r.name === roleName);
+
     if (!role) {
-        return interaction.reply({ content: `⚠️ Rôle **${roleName}** introuvable.`, ephemeral: true });
+        try {
+            await interaction.reply({ content: `⚠️ Rôle **${roleName}** introuvable.`, flags: 64 });
+        } catch (err) {
+            console.error("❌ Erreur interaction rôle introuvable :", err);
+        }
+        return;
     }
 
     const alertChannel = await interaction.guild.channels.fetch(ALERT_CHANNEL_ID);
     if (!alertChannel) {
-        return interaction.reply({ content: "⚠️ Salon d’alerte introuvable.", ephemeral: true });
+        try {
+            await interaction.reply({ content: "⚠️ Salon d’alerte introuvable.", flags: 64 });
+        } catch (err) {
+            console.error("❌ Erreur interaction salon introuvable :", err);
+        }
+        return;
     }
 
-    // Envoi de l’alerte
-    await alertChannel.send({
-        content: `🚨 ${role} vous êtes attaqués ! (Signalé par **${pseudo}**)`,
-        allowedMentions: { roles: [role.id] }
-    });
+    // Vérification cooldown
+    const cooldownKey = `${interaction.user.id}_${roleName}`;
+    const now = Date.now();
+    const cooldownTime = 15 * 1000; // 15 secondes
 
-    console.log(`[🚨 ${new Date().toLocaleTimeString()}] ${pseudo} a envoyé une alerte pour "${roleName}".`);
+    if (cooldowns.has(cooldownKey) && now - cooldowns.get(cooldownKey) < cooldownTime) {
+        const timeLeft = Math.ceil((cooldownTime - (now - cooldowns.get(cooldownKey))) / 1000);
+        try {
+            await interaction.reply({ content: `⏳ Merci d’attendre encore ${timeLeft}s avant de réutiliser le bouton **${roleName}**.`, flags: 64 });
+        } catch (err) {
+            console.error("❌ Erreur interaction cooldown :", err);
+        }
+        return;
+    }
 
-    // Réponse au clic
-    await interaction.reply({
-        content: `✅ Alerte envoyée dans ${alertChannel}`,
-        ephemeral: true
-    });
+    // Enregistrer le nouveau cooldown
+    cooldowns.set(cooldownKey, now);
+
+    // Envoyer l’alerte dans le salon
+    try {
+        await alertChannel.send({
+            content: `🚨 ${role} vous êtes attaqués ! (Appuyé par **${interaction.member.displayName}**)`,
+            allowedMentions: { roles: [role.id] }
+        });
+
+        await interaction.reply({
+            content: `✅ Alerte envoyée dans <#${ALERT_CHANNEL_ID}>`,
+            flags: 64
+        });
+    } catch (err) {
+        console.error("❌ Erreur lors de l’envoi d’alerte :", err);
+    }
 });
 
 // Connexion avec le token depuis Render
