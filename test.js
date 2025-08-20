@@ -48,7 +48,6 @@ const guildRoles = [
   "Doux Poison",
   "Plus Ultra",
   "United cats",
-  "Babgnoules",
   "New World",
   "Mur Rose",
   "Red Bull",
