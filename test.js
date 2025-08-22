@@ -53,8 +53,6 @@ const guildRoles = [
   "Red Bull",
   "E Q U I N O X",
   "Les Chuchoteurs",
-  "La Forge",
-  "G H O S T-a",
   "Ambitions",
   "TESTAGE DE BOT"
 ];
