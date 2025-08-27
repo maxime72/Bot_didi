@@ -45,7 +45,6 @@ const ALERT_CHANNEL_ID = "1402339092385107999"; // 🐎║défense-perco
 const guildRoles = [
   "Tempest",
   "YGGDRASIL",
-  "Doux Poison",
   "Plus Ultra",
   "United cats",
   "New World",
