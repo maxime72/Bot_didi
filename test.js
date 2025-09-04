@@ -47,7 +47,6 @@ const guildRoles = [
   "YGGDRASIL",
   "Plus Ultra",
   "United cats",
-  "New World",
   "Mur Rose",
   "Red Bull",
   "E Q U I N O X",
