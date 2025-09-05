@@ -2,8 +2,6 @@
 // Chargement des variables d'environnement
 // ====================
 require("dotenv").config();
-const fs = require("fs");
-const path = require("path");
 
 // ====================
 // SERVEUR EXPRESS (pour Render)
@@ -11,31 +9,12 @@ const path = require("path");
 const express = require("express");
 const app = express();
 
-// ====================
-// Stats persistantes
-// ====================
-const statsFile = path.join(__dirname, "stats.json");
-let stats = {};
+// Stats mémoire (par utilisateur)
+const stats = {};
 
-// Charger les stats au démarrage
-if (fs.existsSync(statsFile)) {
-  try {
-    stats = JSON.parse(fs.readFileSync(statsFile, "utf-8"));
-    console.log("✅ Stats chargées depuis stats.json");
-  } catch (err) {
-    console.error("⚠️ Impossible de lire stats.json :", err);
-  }
-}
-
-// Sauvegarder les stats dans stats.json
-function saveStats() {
-  fs.writeFileSync(statsFile, JSON.stringify(stats, null, 2));
-}
-
-// ====================
-// Page web avec stats + top 5 + graphique
-// ====================
+// Page HTML avec stats + top 5 + graphique
 app.get("/", (req, res) => {
+  // Trier les stats pour obtenir le Top 5
   const topUsers = Object.values(stats)
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
@@ -85,7 +64,6 @@ app.get("/", (req, res) => {
   `);
 });
 
-// Serveur web
 app.listen(3000, () => {
   console.log("✅ Web server is running on port 3000");
 });
@@ -93,12 +71,12 @@ app.listen(3000, () => {
 // ====================
 // KEEP-ALIVE (Ping toutes les 10 min)
 // ====================
-const fetch = require("node-fetch");
+const fetch = global.fetch || require("node-fetch");
+
 setInterval(() => {
-  fetch("https://bot-didi-h5gm.onrender.com").catch(err =>
-    console.log("Ping failed", err)
-  );
-}, 10 * 60 * 1000);
+  fetch("https://bot-didi-h5gm.onrender.com")
+    .catch(err => console.log("Ping failed", err));
+}, 10 * 60 * 1000); // 10 minutes
 
 // ====================
 // BOT DISCORD
@@ -108,6 +86,7 @@ const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
 const PANEL_CHANNEL_ID = "1404539663322054718"; // 🐎║ping-perco
 const ALERT_CHANNEL_ID = "1402339092385107999"; // 🐎║défense-perco
 
+// Liste des guildes
 const guildRoles = [
   "Tempest",
   "YGGDRASIL",
@@ -122,6 +101,7 @@ const guildRoles = [
   "TESTAGE DE BOT"
 ];
 
+// Cooldowns par utilisateur + guilde
 const cooldowns = new Map();
 
 const client = new Client({
@@ -141,36 +121,39 @@ client.once(Events.ClientReady, async () => {
     return;
   }
 
+  // Vérifier si panneau déjà présent
   const messages = await channel.messages.fetch({ limit: 10 });
   const panneauExiste = messages.some(msg => msg.content.includes("📢 **Alerte Guildes**"));
 
-  if (!panneauExiste) {
-    const rows = [];
-    let currentRow = new ActionRowBuilder();
-
-    guildRoles.forEach((roleName, index) => {
-      const button = new ButtonBuilder()
-        .setCustomId(`alert_${roleName.replace(/\s+/g, "_")}`)
-        .setLabel(roleName)
-        .setStyle(ButtonStyle.Primary);
-
-      currentRow.addComponents(button);
-
-      if ((index + 1) % 5 === 0 || index === guildRoles.length - 1) {
-        rows.push(currentRow);
-        currentRow = new ActionRowBuilder();
-      }
-    });
-
-    await channel.send({
-      content: "📢 **Alerte Guildes**\nCliquez sur le bouton correspondant à la guilde attaquée pour envoyer une alerte dans 🐎║défense-perco.",
-      components: rows
-    });
-
-    console.log("✅ Panneau envoyé !");
-  } else {
-    console.log("ℹ️ Panneau déjà présent.");
+  if (panneauExiste) {
+    console.log("ℹ️ Panneau déjà présent, aucun nouvel envoi.");
+    return;
   }
+
+  // Créer les boutons
+  const rows = [];
+  let currentRow = new ActionRowBuilder();
+
+  guildRoles.forEach((roleName, index) => {
+    const button = new ButtonBuilder()
+      .setCustomId(`alert_${roleName.replace(/\s+/g, "_")}`)
+      .setLabel(roleName)
+      .setStyle(ButtonStyle.Primary);
+
+    currentRow.addComponents(button);
+
+    if ((index + 1) % 5 === 0 || index === guildRoles.length - 1) {
+      rows.push(currentRow);
+      currentRow = new ActionRowBuilder();
+    }
+  });
+
+  await channel.send({
+    content: "📢 **Alerte Guildes**\nCliquez sur le bouton correspondant à la guilde attaquée pour envoyer une alerte dans 🐎║défense-perco.",
+    components: rows
+  });
+
+  console.log("✅ Panneau envoyé !");
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
@@ -179,7 +162,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
   const roleName = interaction.customId.replace("alert_", "").replace(/_/g, " ");
   const role = interaction.guild.roles.cache.find(r => r.name === roleName);
 
-  if (!role) return interaction.reply({ content: `⚠️ Rôle **${roleName}** introuvable.`, flags: 64 });
+  if (!role) {
+    return interaction.reply({ content: `⚠️ Rôle **${roleName}** introuvable.`, flags: 64 });
+  }
 
   const cooldownKey = `${interaction.user.id}_${roleName}`;
   const now = Date.now();
@@ -189,16 +174,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
     return interaction.reply({ content: `⏳ Attendez encore ${remaining}s avant de reping **${roleName}**.`, flags: 64 });
   }
 
-  cooldowns.set(cooldownKey, now + 15000); // 15s cooldown
+  cooldowns.set(cooldownKey, now + 15000); // 15s de cooldown
+
   await interaction.deferReply({ ephemeral: true });
 
   const alertChannel = await interaction.guild.channels.fetch(ALERT_CHANNEL_ID);
-  if (!alertChannel) return interaction.editReply({ content: "⚠️ Salon d’alerte introuvable." });
+  if (!alertChannel) {
+    return interaction.editReply({ content: "⚠️ Salon d’alerte introuvable." });
+  }
 
   // Stats
-  if (!stats[interaction.user.id]) stats[interaction.user.id] = { username: interaction.member.displayName, count: 0 };
+  if (!stats[interaction.user.id]) {
+    stats[interaction.user.id] = { username: interaction.member.displayName, count: 0 };
+  }
   stats[interaction.user.id].count++;
-  saveStats(); // Sauvegarde immédiate
 
   await alertChannel.send({
     content: `🚨 ${role} vous êtes attaqués ! (Ping par **${interaction.member.displayName}**)`,
