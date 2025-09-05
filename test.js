@@ -2,6 +2,8 @@
 // Chargement des variables d'environnement
 // ====================
 require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
 
 // ====================
 // SERVEUR EXPRESS (pour Render)
@@ -9,12 +11,17 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 
-// Stats mémoire (par utilisateur)
-const stats = {};
+// Fichier pour sauvegarder les stats
+const STATS_FILE = path.join(__dirname, "stats.json");
+
+// Charger les stats existantes si elles existent
+let stats = {};
+if (fs.existsSync(STATS_FILE)) {
+  stats = JSON.parse(fs.readFileSync(STATS_FILE, "utf8"));
+}
 
 // Page HTML avec stats + top 5 + graphique
 app.get("/", (req, res) => {
-  // Trier les stats pour obtenir le Top 5
   const topUsers = Object.values(stats)
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
@@ -83,8 +90,8 @@ setInterval(() => {
 // ====================
 const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events } = require("discord.js");
 
-const PANEL_CHANNEL_ID = "1404539663322054718"; // 🐎║ping-perco
-const ALERT_CHANNEL_ID = "1402339092385107999"; // 🐎║défense-perco
+const PANEL_CHANNEL_ID = "1404539663322054718"; 
+const ALERT_CHANNEL_ID = "1402339092385107999"; 
 
 // Liste des guildes
 const guildRoles = [
@@ -111,6 +118,11 @@ const client = new Client({
     GatewayIntentBits.MessageContent
   ]
 });
+
+// Fonction pour sauvegarder les stats dans le fichier JSON
+function saveStats() {
+  fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2));
+}
 
 client.once(Events.ClientReady, async () => {
   console.log(`✅ Connecté en tant que ${client.user.tag}`);
@@ -188,6 +200,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
     stats[interaction.user.id] = { username: interaction.member.displayName, count: 0 };
   }
   stats[interaction.user.id].count++;
+
+  // Sauvegarde des stats
+  saveStats();
 
   await alertChannel.send({
     content: `🚨 ${role} vous êtes attaqués ! (Ping par **${interaction.member.displayName}**)`,
