@@ -9,33 +9,52 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 
-// Stockage des stats en mémoire
-const stats = {}; // { userId: { username: "nom", count: X } }
+// Stats mémoire (par utilisateur)
+const stats = {};
 
-// Page principale : affiche stats + graphique
+// Page HTML avec stats + top 5 + graphique
 app.get("/", (req, res) => {
-  const labels = Object.values(stats).map(s => s.username);
-  const data = Object.values(stats).map(s => s.count);
+  // Trier les stats pour obtenir le Top 5
+  const topUsers = Object.values(stats)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  let statsHtml = "";
+  for (const id in stats) {
+    statsHtml += `<li>${stats[id].username} ➝ ${stats[id].count} alertes envoyées</li>`;
+  }
+
+  let topHtml = "";
+  topUsers.forEach((user, index) => {
+    topHtml += `<li>🏅 ${index + 1}. ${user.username} ➝ ${user.count} alertes</li>`;
+  });
 
   res.send(`
     <html>
       <head>
-        <title>📊 Stats Bot Didi</title>
+        <title>Stats Bot Didi</title>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       </head>
-      <body style="font-family: Arial; text-align: center; margin-top: 50px;">
-        <h1>📊 Statistiques des Pings</h1>
-        <canvas id="statsChart" width="600" height="400"></canvas>
+      <body>
+        <h1>📊 Statistiques Bot Didi</h1>
+        <h2>📌 Toutes les alertes</h2>
+        <ul>${statsHtml}</ul>
+
+        <h2>🏆 Top 5 des plus gros pingers</h2>
+        <ol>${topHtml}</ol>
+
+        <h2>📈 Graphique des alertes</h2>
+        <canvas id="statsChart" width="400" height="200"></canvas>
         <script>
-          const ctx = document.getElementById('statsChart');
+          const ctx = document.getElementById('statsChart').getContext('2d');
           new Chart(ctx, {
             type: 'bar',
             data: {
-              labels: ${JSON.stringify(labels)},
+              labels: ${JSON.stringify(Object.values(stats).map(u => u.username))},
               datasets: [{
-                label: 'Nombre de pings',
-                data: ${JSON.stringify(data)},
-                backgroundColor: 'rgba(54, 162, 235, 0.7)'
+                label: 'Alertes envoyées',
+                data: ${JSON.stringify(Object.values(stats).map(u => u.count))},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)'
               }]
             }
           });
@@ -52,7 +71,7 @@ app.listen(3000, () => {
 // ====================
 // KEEP-ALIVE (Ping toutes les 10 min)
 // ====================
-const fetch = (...args) => import("node-fetch").then(({default: fetch}) => fetch(...args));
+const fetch = require("node-fetch");
 setInterval(() => {
   fetch("https://bot-didi-h5gm.onrender.com").catch(err =>
     console.log("Ping failed", err)
@@ -67,7 +86,7 @@ const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
 const PANEL_CHANNEL_ID = "1404539663322054718"; // 🐎║ping-perco
 const ALERT_CHANNEL_ID = "1402339092385107999"; // 🐎║défense-perco
 
-// Liste des guildes (noms EXACTS des rôles dans Discord)
+// Liste des guildes
 const guildRoles = [
   "Tempest",
   "YGGDRASIL",
@@ -82,7 +101,7 @@ const guildRoles = [
   "TESTAGE DE BOT"
 ];
 
-// Cooldowns (par utilisateur et par bouton)
+// Cooldowns
 const cooldowns = new Map();
 
 const client = new Client({
@@ -102,7 +121,7 @@ client.once(Events.ClientReady, async () => {
     return;
   }
 
-  // Vérifier si le panneau existe déjà (éviter les doublons)
+  // Vérifier si panneau déjà présent
   const messages = await channel.messages.fetch({ limit: 10 });
   const panneauExiste = messages.some(msg => msg.content.includes("📢 **Alerte Guildes**"));
 
@@ -123,7 +142,6 @@ client.once(Events.ClientReady, async () => {
 
     currentRow.addComponents(button);
 
-    // 5 boutons max par ligne
     if ((index + 1) % 5 === 0 || index === guildRoles.length - 1) {
       rows.push(currentRow);
       currentRow = new ActionRowBuilder();
@@ -148,26 +166,24 @@ client.on(Events.InteractionCreate, async (interaction) => {
     return interaction.reply({ content: `⚠️ Rôle **${roleName}** introuvable.`, flags: 64 });
   }
 
-  // Cooldown (15s par bouton et utilisateur)
   const cooldownKey = `${interaction.user.id}_${roleName}`;
   const now = Date.now();
 
-  if (cooldowns.has(cooldownKey)) {
-    const expiration = cooldowns.get(cooldownKey);
-    if (now < expiration) {
-      const remaining = Math.ceil((expiration - now) / 1000);
-      return interaction.reply({ content: `⏳ Attendez encore ${remaining}s avant de reping **${roleName}**.`, flags: 64 });
-    }
+  if (cooldowns.has(cooldownKey) && now < cooldowns.get(cooldownKey)) {
+    const remaining = Math.ceil((cooldowns.get(cooldownKey) - now) / 1000);
+    return interaction.reply({ content: `⏳ Attendez encore ${remaining}s avant de reping **${roleName}**.`, flags: 64 });
   }
 
   cooldowns.set(cooldownKey, now + 15000);
 
+  await interaction.deferReply({ ephemeral: true });
+
   const alertChannel = await interaction.guild.channels.fetch(ALERT_CHANNEL_ID);
   if (!alertChannel) {
-    return interaction.reply({ content: "⚠️ Salon d’alerte introuvable.", flags: 64 });
+    return interaction.editReply({ content: "⚠️ Salon d’alerte introuvable." });
   }
 
-  // Ajouter aux stats
+  // Stats
   if (!stats[interaction.user.id]) {
     stats[interaction.user.id] = { username: interaction.member.displayName, count: 0 };
   }
@@ -178,8 +194,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     allowedMentions: { roles: [role.id] }
   });
 
-  await interaction.reply({ content: `✅ Alerte envoyée dans ${alertChannel}`, flags: 64 });
+  await interaction.editReply({ content: `✅ Alerte envoyée dans ${alertChannel}` });
 });
 
-// Connexion avec le token depuis Render
 client.login(process.env.DISCORD_TOKEN);
