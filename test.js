@@ -105,6 +105,7 @@ const guildRoles = [
   "Les Chuchoteurs",
   "Ambitions",
   "D E S T I N Y",
+"- G H O S T -",
   "TESTAGE DE BOT"
 ];
 
