@@ -15,21 +15,17 @@ const app = express();
 const STATS_FILE = path.join(__dirname, "stats.json");
 
 // Charger les stats existantes si elles existent
-let stats = {};
+let stats = { users: {}, guilds: {} };
 if (fs.existsSync(STATS_FILE)) {
   stats = JSON.parse(fs.readFileSync(STATS_FILE, "utf8"));
 }
 
-// Page HTML avec stats + top 5 + graphique
+// Page HTML avec stats + top 5 + graphique par guilde
 app.get("/", (req, res) => {
-  const topUsers = Object.values(stats)
+  // Trier les stats pour obtenir le Top 5 des utilisateurs
+  const topUsers = Object.values(stats.users)
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
-
-  let statsHtml = "";
-  for (const id in stats) {
-    statsHtml += `<li>${stats[id].username} ➝ ${stats[id].count} alertes envoyées</li>`;
-  }
 
   let topHtml = "";
   topUsers.forEach((user, index) => {
@@ -44,24 +40,23 @@ app.get("/", (req, res) => {
       </head>
       <body>
         <h1>📊 Statistiques Bot Didi</h1>
-        <h2>📌 Toutes les alertes</h2>
-        <ul>${statsHtml}</ul>
+
+        <h2>📈 Alertes par guilde</h2>
+        <canvas id="guildChart" width="400" height="200"></canvas>
 
         <h2>🏆 Top 5 des plus gros pingers</h2>
         <ol>${topHtml}</ol>
 
-        <h2>📈 Graphique des alertes</h2>
-        <canvas id="statsChart" width="400" height="200"></canvas>
         <script>
-          const ctx = document.getElementById('statsChart').getContext('2d');
-          new Chart(ctx, {
+          const ctxGuild = document.getElementById('guildChart').getContext('2d');
+          new Chart(ctxGuild, {
             type: 'bar',
             data: {
-              labels: ${JSON.stringify(Object.values(stats).map(u => u.username))},
+              labels: ${JSON.stringify(Object.keys(stats.guilds))},
               datasets: [{
                 label: 'Alertes envoyées',
-                data: ${JSON.stringify(Object.values(stats).map(u => u.count))},
-                backgroundColor: 'rgba(54, 162, 235, 0.6)'
+                data: ${JSON.stringify(Object.values(stats.guilds))},
+                backgroundColor: 'rgba(255, 99, 132, 0.6)'
               }]
             }
           });
@@ -196,13 +191,19 @@ client.on(Events.InteractionCreate, async (interaction) => {
     return interaction.editReply({ content: "⚠️ Salon d’alerte introuvable." });
   }
 
-  // Stats
-  if (!stats[interaction.user.id]) {
-    stats[interaction.user.id] = { username: interaction.member.displayName, count: 0 };
+  // Stats utilisateur
+  if (!stats.users[interaction.user.id]) {
+    stats.users[interaction.user.id] = { username: interaction.member.displayName, count: 0 };
   }
-  stats[interaction.user.id].count++;
+  stats.users[interaction.user.id].count++;
 
-  // Sauvegarde des stats
+  // Stats guilde
+  if (!stats.guilds[roleName]) {
+    stats.guilds[roleName] = 0;
+  }
+  stats.guilds[roleName]++;
+
+  // Sauvegarde
   saveStats();
 
   await alertChannel.send({
