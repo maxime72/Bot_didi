@@ -93,14 +93,12 @@ const guildRoles = [
   "Tempest",
   "YGGDRASIL",
   "Plus Ultra",
-  "United cats",
   "Mur Rose",
   "Red Bull",
   "E Q U I N O X",
   "Les Chuchoteurs",
   "Ambitions",
   "D E S T I N Y",
-"- G H O S T -",
   "TESTAGE DE BOT"
 ];
 
