@@ -3,7 +3,6 @@
 // ====================
 require("dotenv").config();
 const fs = require("fs");
-const path = require("path");
 
 // ====================
 // SERVEUR EXPRESS (pour Render)
@@ -11,59 +10,8 @@ const path = require("path");
 const express = require("express");
 const app = express();
 
-// Fichier pour sauvegarder les stats
-const STATS_FILE = path.join(__dirname, "stats.json");
-
-// Charger les stats existantes si elles existent
-let stats = { users: {}, guilds: {} };
-if (fs.existsSync(STATS_FILE)) {
-  stats = JSON.parse(fs.readFileSync(STATS_FILE, "utf8"));
-}
-
-// Page HTML avec stats + top 5 + graphique par guilde
 app.get("/", (req, res) => {
-  // Trier les stats pour obtenir le Top 5 des utilisateurs
-  const topUsers = Object.values(stats.users)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
-
-  let topHtml = "";
-  topUsers.forEach((user, index) => {
-    topHtml += `<li>🏅 ${index + 1}. ${user.username} ➝ ${user.count} alertes</li>`;
-  });
-
-  res.send(`
-    <html>
-      <head>
-        <title>Stats Bot Didi</title>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-      </head>
-      <body>
-        <h1>📊 Statistiques Bot Didi</h1>
-
-        <h2>📈 Alertes par guilde</h2>
-        <canvas id="guildChart" width="400" height="200"></canvas>
-
-        <h2>🏆 Top 5 des plus gros pingers</h2>
-        <ol>${topHtml}</ol>
-
-        <script>
-          const ctxGuild = document.getElementById('guildChart').getContext('2d');
-          new Chart(ctxGuild, {
-            type: 'bar',
-            data: {
-              labels: ${JSON.stringify(Object.keys(stats.guilds))},
-              datasets: [{
-                label: 'Alertes envoyées',
-                data: ${JSON.stringify(Object.values(stats.guilds))},
-                backgroundColor: 'rgba(255, 99, 132, 0.6)'
-              }]
-            }
-          });
-        </script>
-      </body>
-    </html>
-  `);
+  res.send("Bot Didi is running!");
 });
 
 app.listen(3000, () => {
@@ -73,50 +21,64 @@ app.listen(3000, () => {
 // ====================
 // KEEP-ALIVE (Ping toutes les 10 min)
 // ====================
-const fetch = global.fetch || require("node-fetch");
-
+const fetch = (...args) =>
+  import("node-fetch").then(({ default: fetch }) => fetch(...args));
 setInterval(() => {
-  fetch("https://bot-didi-h5gm.onrender.com")
-    .catch(err => console.log("Ping failed", err));
-}, 10 * 60 * 1000); // 10 minutes
+  fetch("https://bot-didi-h5gm.onrender.com").catch((err) =>
+    console.log("Ping failed", err)
+  );
+}, 10 * 60 * 1000);
 
 // ====================
 // BOT DISCORD
 // ====================
-const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events } = require("discord.js");
+const {
+  Client,
+  GatewayIntentBits,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  Events,
+} = require("discord.js");
 
-const PANEL_CHANNEL_ID = "1404539663322054718"; 
-const ALERT_CHANNEL_ID = "1402339092385107999"; 
+const PANEL_CHANNEL_ID = "1404539663322054718"; // 🐎║ping-perco
+const ALERT_CHANNEL_ID = "1402339092385107999"; // 🐎║défense-perco
 
 // Liste des guildes
 const guildRoles = [
   "Tempest",
   "YGGDRASIL",
   "Plus Ultra",
-  "Mur Rose",
   "Red Bull",
   "E Q U I N O X",
   "Les Chuchoteurs",
   "Ambitions",
   "D E S T I N Y",
-  "TESTAGE DE BOT"
+  "TESTAGE DE BOT",
 ];
 
-// Cooldowns par utilisateur + guilde
+// Cooldowns
 const cooldowns = new Map();
+
+// Stats sauvegardées dans un fichier
+const statsFile = "stats.json";
+let stats = {};
+if (fs.existsSync(statsFile)) {
+  stats = JSON.parse(fs.readFileSync(statsFile, "utf8"));
+}
+
+// Sauvegarde automatique des stats
+function saveStats() {
+  fs.writeFileSync(statsFile, JSON.stringify(stats, null, 2));
+}
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
+    GatewayIntentBits.MessageContent,
+  ],
 });
-
-// Fonction pour sauvegarder les stats dans le fichier JSON
-function saveStats() {
-  fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2));
-}
 
 client.once(Events.ClientReady, async () => {
   console.log(`✅ Connecté en tant que ${client.user.tag}`);
@@ -129,7 +91,9 @@ client.once(Events.ClientReady, async () => {
 
   // Vérifier si panneau déjà présent
   const messages = await channel.messages.fetch({ limit: 10 });
-  const panneauExiste = messages.some(msg => msg.content.includes("📢 **Alerte Guildes**"));
+  const panneauExiste = messages.some((msg) =>
+    msg.content.includes("📢 **Alerte Guildes**")
+  );
 
   if (panneauExiste) {
     console.log("ℹ️ Panneau déjà présent, aucun nouvel envoi.");
@@ -155,8 +119,9 @@ client.once(Events.ClientReady, async () => {
   });
 
   await channel.send({
-    content: "📢 **Alerte Guildes**\nCliquez sur le bouton correspondant à la guilde attaquée pour envoyer une alerte dans 🐎║défense-perco.",
-    components: rows
+    content:
+      "📢 **Alerte Guildes**\nCliquez sur le bouton correspondant à la guilde attaquée pour envoyer une alerte dans 🐎║défense-perco.",
+    components: rows,
   });
 
   console.log("✅ Panneau envoyé !");
@@ -165,51 +130,65 @@ client.once(Events.ClientReady, async () => {
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isButton()) return;
 
-  const roleName = interaction.customId.replace("alert_", "").replace(/_/g, " ");
-  const role = interaction.guild.roles.cache.find(r => r.name === roleName);
+  const roleName = interaction.customId
+    .replace("alert_", "")
+    .replace(/_/g, " ");
+  const role = interaction.guild.roles.cache.find((r) => r.name === roleName);
 
   if (!role) {
-    return interaction.reply({ content: `⚠️ Rôle **${roleName}** introuvable.`, flags: 64 });
+    return interaction.reply({
+      content: `⚠️ Rôle **${roleName}** introuvable.`,
+      flags: 64,
+    });
   }
 
   const cooldownKey = `${interaction.user.id}_${roleName}`;
   const now = Date.now();
 
   if (cooldowns.has(cooldownKey) && now < cooldowns.get(cooldownKey)) {
-    const remaining = Math.ceil((cooldowns.get(cooldownKey) - now) / 1000);
-    return interaction.reply({ content: `⏳ Attendez encore ${remaining}s avant de reping **${roleName}**.`, flags: 64 });
+    const remaining = Math.ceil(
+      (cooldowns.get(cooldownKey) - now) / 1000
+    );
+    return interaction.reply({
+      content: `⏳ Attendez encore ${remaining}s avant de reping **${roleName}**.`,
+      flags: 64,
+    });
   }
 
-  cooldowns.set(cooldownKey, now + 15000); // 15s de cooldown
+  cooldowns.set(cooldownKey, now + 15000);
 
   await interaction.deferReply({ ephemeral: true });
 
   const alertChannel = await interaction.guild.channels.fetch(ALERT_CHANNEL_ID);
   if (!alertChannel) {
-    return interaction.editReply({ content: "⚠️ Salon d’alerte introuvable." });
+    return interaction.editReply({
+      content: "⚠️ Salon d’alerte introuvable.",
+    });
   }
 
-  // Stats utilisateur
-  if (!stats.users[interaction.user.id]) {
-    stats.users[interaction.user.id] = { username: interaction.member.displayName, count: 0 };
+  // Stats
+  if (!stats[interaction.user.id]) {
+    stats[interaction.user.id] = { username: interaction.user.username, count: 0 };
   }
-  stats.users[interaction.user.id].count++;
-
-  // Stats guilde
-  if (!stats.guilds[roleName]) {
-    stats.guilds[roleName] = 0;
-  }
-  stats.guilds[roleName]++;
-
-  // Sauvegarde
+  stats[interaction.user.id].count++;
   saveStats();
 
+  // Message personnalisé pour TESTAGE DE BOT
+  let alertMessage;
+  if (roleName === "TESTAGE DE BOT") {
+    alertMessage = `🚨 ${role} est attaqué ! Bisous 😘`;
+  } else {
+    alertMessage = `🚨 ${role} vous êtes attaqués !`;
+  }
+
   await alertChannel.send({
-    content: `🚨 ${role} vous êtes attaqués ! (Ping par **${interaction.member.displayName}**)`,
-    allowedMentions: { roles: [role.id] }
+    content: alertMessage,
+    allowedMentions: { roles: [role.id] },
   });
 
-  await interaction.editReply({ content: `✅ Alerte envoyée dans ${alertChannel}` });
+  await interaction.editReply({
+    content: `✅ Alerte envoyée dans ${alertChannel}`,
+  });
 });
 
 client.login(process.env.DISCORD_TOKEN);
