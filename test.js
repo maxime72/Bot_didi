@@ -35,7 +35,7 @@ const guildRoles = [
 // Messages personnalisés pour chaque guilde
 const guildMessages = {
     "Tempest": "🚨  vous êtes attaqués 🌪️!",
-  "YGGDRASIL": "🚨 vous êtes attaqués !Ygg va def stp !",
+  "YGGDRASIL": "🚨 ALERTE AU GOGOLE !",
   "Plus Ultra": "🚨 vous êtes attaqués !",
   "Red Bull": "Donne des ailes 🚨  vous êtes attaqués !🪽",
   "E Q U I N O X": "🚨 vous êtes attaqués☀️ !",
@@ -109,14 +109,7 @@ client.on(Events.InteractionCreate, async interaction => {
   const userId = interaction.user.id;
   const now = Date.now();
 
-  // Cooldown par utilisateur/guilde
-  if (!cooldowns.has(guildName)) cooldowns.set(guildName, new Map());
-  const userCooldowns = cooldowns.get(guildName);
-  if (userCooldowns.has(userId) && now - userCooldowns.get(userId) < 15000) {
-    const remaining = Math.ceil((15000 - (now - userCooldowns.get(userId))) / 1000);
-    return interaction.reply({ content: `⏳ Attends encore ${remaining}s avant de reping **${guildName}**.`, flags: 64 });
-  }
-  userCooldowns.set(userId, now);
+  
 
   // Stats
   if (!stats[guildName]) stats[guildName] = { total: 0 };
