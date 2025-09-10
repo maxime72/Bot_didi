@@ -34,15 +34,15 @@ const guildRoles = [
 
 // Messages personnalisés pour chaque guilde
 const guildMessages = {
-    "Tempest": "🚨 @Tempest vous êtes attaqués 🌪️!",
-  "YGGDRASIL": "🚨 @YGGDRASIL vous êtes attaqués !",
-  "Plus Ultra": "🚨 @Plus Ultra vous êtes attaqués !",
-  "Red Bull": "🚨 @Red Bull vous êtes attaqués !🪽",
-  "E Q U I N O X": "🚨 @E Q U I N O X vous êtes attaqués☀️ !",
-  "Les Chuchoteurs": "🚨 @Les Chuchoteurs vous êtes attaqués 🧟!",
+    "Tempest": "🚨  vous êtes attaqués 🌪️!",
+  "YGGDRASIL": "🚨 vous êtes attaqués !Ygg go def !",
+  "Plus Ultra": "🚨 vous êtes attaqués !",
+  "Red Bull": "Donne des ailes 🚨  vous êtes attaqués !🪽",
+  "E Q U I N O X": "🚨 vous êtes attaqués☀️ !",
+  "Les Chuchoteurs": "🚨 🧟‍♂️ vous êtes attaqués 🧟!",
   "Ambitions": "🚨 @Ambitions vous êtes attaqués !",
-  "D E S T I N Y": "🚨 @D E S T I N Y vous êtes attaqués 🕊️!",
-  "TESTAGE DE BOT": "🚨 @TESTAGE DE BOT ceci n' est qu'un test Bisous 😘"
+  "D E S T I N Y": "🚨  vous êtes attaqués 🕊️!",
+  "TESTAGE DE BOT": "🚨 ceci n' est qu'un test Bisous 😘"
 };
 
 // Cooldowns
