@@ -158,7 +158,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   // Message personnalisé ou générique
   let messageContent;
   if (roleName === "TESTAGE DE BOT") {
-    messageContent = `🚨 ${role} vous êtes attaqués ! Bisous 😘`;
+    messageContent = `🚨 ${role} est un Test, Bisous 😘`;
   } else {
     messageContent = `🚨 ${role} vous êtes attaqués !`;
   }
