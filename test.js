@@ -35,7 +35,7 @@ const guildRoles = [
 // Messages personnalisés pour chaque guilde
 const guildMessages = {
     "Tempest": "🚨  vous êtes attaqués 🌪️!",
-  "YGGDRASIL": "🚨 vous êtes attaqués !Ygg go def !",
+  "YGGDRASIL": "🚨 vous êtes attaqués !Ygg va def stp !",
   "Plus Ultra": "🚨 vous êtes attaqués !",
   "Red Bull": "Donne des ailes 🚨  vous êtes attaqués !🪽",
   "E Q U I N O X": "🚨 vous êtes attaqués☀️ !",
