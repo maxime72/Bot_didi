@@ -41,8 +41,6 @@ const guildRoles = [
   "Tempest",
   "YGGDRASIL",
   "Plus Ultra",
-  "United cats",
-  "Mur Rose",
   "Red Bull",
   "E Q U I N O X",
   "Les Chuchoteurs",
