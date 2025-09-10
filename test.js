@@ -21,10 +21,9 @@ app.listen(3000, () => {
 // ====================
 // KEEP-ALIVE (Ping toutes les 10 min)
 // ====================
-const fetch = (...args) =>
-  import("node-fetch").then(({ default: fetch }) => fetch(...args));
+const fetch = (...args) => import("node-fetch").then(({default: fetch}) => fetch(...args));
 setInterval(() => {
-  fetch("https://bot-didi-h5gm.onrender.com").catch((err) =>
+  fetch("https://bot-didi-h5gm.onrender.com").catch(err =>
     console.log("Ping failed", err)
   );
 }, 10 * 60 * 1000);
@@ -32,14 +31,7 @@ setInterval(() => {
 // ====================
 // BOT DISCORD
 // ====================
-const {
-  Client,
-  GatewayIntentBits,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  Events,
-} = require("discord.js");
+const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events } = require("discord.js");
 
 const PANEL_CHANNEL_ID = "1404539663322054718"; // 🐎║ping-perco
 const ALERT_CHANNEL_ID = "1402339092385107999"; // 🐎║défense-perco
@@ -49,25 +41,39 @@ const guildRoles = [
   "Tempest",
   "YGGDRASIL",
   "Plus Ultra",
+  "United cats",
+  "Mur Rose",
   "Red Bull",
   "E Q U I N O X",
   "Les Chuchoteurs",
   "Ambitions",
   "D E S T I N Y",
-  "TESTAGE DE BOT",
+  "TESTAGE DE BOT"
 ];
+
+// Messages personnalisés
+const customMessages = {
+  "TESTAGE DE BOT": "🚨 TESTAGE DE BOT est un essai bisous 😘 !"
+};
 
 // Cooldowns
 const cooldowns = new Map();
 
-// Stats sauvegardées dans un fichier
-const statsFile = "stats.json";
+// Stats (sauvegardées dans stats.json)
 let stats = {};
+const statsFile = "stats.json";
+
+// Charger les stats au démarrage
 if (fs.existsSync(statsFile)) {
-  stats = JSON.parse(fs.readFileSync(statsFile, "utf8"));
+  try {
+    stats = JSON.parse(fs.readFileSync(statsFile, "utf8"));
+    console.log("📊 Stats chargées depuis stats.json");
+  } catch (err) {
+    console.error("⚠️ Erreur lors du chargement des stats :", err);
+  }
 }
 
-// Sauvegarde automatique des stats
+// Sauvegarde périodique
 function saveStats() {
   fs.writeFileSync(statsFile, JSON.stringify(stats, null, 2));
 }
@@ -76,8 +82,8 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
+    GatewayIntentBits.MessageContent
+  ]
 });
 
 client.once(Events.ClientReady, async () => {
@@ -91,9 +97,7 @@ client.once(Events.ClientReady, async () => {
 
   // Vérifier si panneau déjà présent
   const messages = await channel.messages.fetch({ limit: 10 });
-  const panneauExiste = messages.some((msg) =>
-    msg.content.includes("📢 **Alerte Guildes**")
-  );
+  const panneauExiste = messages.some(msg => msg.content.includes("📢 **Alerte Guildes**"));
 
   if (panneauExiste) {
     console.log("ℹ️ Panneau déjà présent, aucun nouvel envoi.");
@@ -119,9 +123,8 @@ client.once(Events.ClientReady, async () => {
   });
 
   await channel.send({
-    content:
-      "📢 **Alerte Guildes**\nCliquez sur le bouton correspondant à la guilde attaquée pour envoyer une alerte dans 🐎║défense-perco.",
-    components: rows,
+    content: "📢 **Alerte Guildes**\nCliquez sur le bouton correspondant à la guilde attaquée pour envoyer une alerte dans 🐎║défense-perco.",
+    components: rows
   });
 
   console.log("✅ Panneau envoyé !");
@@ -130,65 +133,46 @@ client.once(Events.ClientReady, async () => {
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isButton()) return;
 
-  const roleName = interaction.customId
-    .replace("alert_", "")
-    .replace(/_/g, " ");
-  const role = interaction.guild.roles.cache.find((r) => r.name === roleName);
+  const roleName = interaction.customId.replace("alert_", "").replace(/_/g, " ");
+  const role = interaction.guild.roles.cache.find(r => r.name === roleName);
 
   if (!role) {
-    return interaction.reply({
-      content: `⚠️ Rôle **${roleName}** introuvable.`,
-      flags: 64,
-    });
+    return interaction.reply({ content: `⚠️ Rôle **${roleName}** introuvable.`, flags: 64 });
   }
 
   const cooldownKey = `${interaction.user.id}_${roleName}`;
   const now = Date.now();
 
   if (cooldowns.has(cooldownKey) && now < cooldowns.get(cooldownKey)) {
-    const remaining = Math.ceil(
-      (cooldowns.get(cooldownKey) - now) / 1000
-    );
-    return interaction.reply({
-      content: `⏳ Attendez encore ${remaining}s avant de reping **${roleName}**.`,
-      flags: 64,
-    });
+    const remaining = Math.ceil((cooldowns.get(cooldownKey) - now) / 1000);
+    return interaction.reply({ content: `⏳ Attendez encore ${remaining}s avant de reping **${roleName}**.`, flags: 64 });
   }
 
   cooldowns.set(cooldownKey, now + 15000);
 
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: 64 });
 
   const alertChannel = await interaction.guild.channels.fetch(ALERT_CHANNEL_ID);
   if (!alertChannel) {
-    return interaction.editReply({
-      content: "⚠️ Salon d’alerte introuvable.",
-    });
+    return interaction.editReply({ content: "⚠️ Salon d’alerte introuvable." });
   }
 
   // Stats
   if (!stats[interaction.user.id]) {
-    stats[interaction.user.id] = { username: interaction.user.username, count: 0 };
+    stats[interaction.user.id] = { username: interaction.member.displayName, count: 0 };
   }
   stats[interaction.user.id].count++;
   saveStats();
 
-  // Message personnalisé pour TESTAGE DE BOT
-  let alertMessage;
-  if (roleName === "TESTAGE DE BOT") {
-    alertMessage = `🚨 ${role} est attaqué ! Bisous 😘`;
-  } else {
-    alertMessage = `🚨 ${role} vous êtes attaqués !`;
-  }
+  // Message personnalisé ou par défaut
+  const message = customMessages[roleName] || `🚨 ${role} vous êtes attaqués !`;
 
   await alertChannel.send({
-    content: alertMessage,
-    allowedMentions: { roles: [role.id] },
+    content: message,
+    allowedMentions: { roles: [role.id] }
   });
 
-  await interaction.editReply({
-    content: `✅ Alerte envoyée dans ${alertChannel}`,
-  });
+  await interaction.editReply({ content: `✅ Alerte envoyée dans ${alertChannel}` });
 });
 
 client.login(process.env.DISCORD_TOKEN);
