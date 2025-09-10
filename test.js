@@ -51,31 +51,24 @@ const guildRoles = [
   "TESTAGE DE BOT"
 ];
 
-// Messages personnalisés
-const customMessages = {
-  "TESTAGE DE BOT": "🚨 TESTAGE DE BOT est un essai bisous 😘 !"
-};
-
 // Cooldowns
 const cooldowns = new Map();
 
-// Stats (sauvegardées dans stats.json)
+// Stats persistantes
 let stats = {};
-const statsFile = "stats.json";
+const STATS_FILE = "stats.json";
 
-// Charger les stats au démarrage
-if (fs.existsSync(statsFile)) {
+if (fs.existsSync(STATS_FILE)) {
   try {
-    stats = JSON.parse(fs.readFileSync(statsFile, "utf8"));
-    console.log("📊 Stats chargées depuis stats.json");
-  } catch (err) {
-    console.error("⚠️ Erreur lors du chargement des stats :", err);
+    stats = JSON.parse(fs.readFileSync(STATS_FILE, "utf8"));
+  } catch (e) {
+    console.error("⚠️ Erreur de lecture stats.json:", e);
+    stats = {};
   }
 }
 
-// Sauvegarde périodique
 function saveStats() {
-  fs.writeFileSync(statsFile, JSON.stringify(stats, null, 2));
+  fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2));
 }
 
 const client = new Client({
@@ -164,11 +157,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
   stats[interaction.user.id].count++;
   saveStats();
 
-  // Message personnalisé ou par défaut
-  const message = customMessages[roleName] || `🚨 ${role} vous êtes attaqués !`;
+  // Message personnalisé ou générique
+  let messageContent;
+  if (roleName === "TESTAGE DE BOT") {
+    messageContent = `🚨 ${role} vous êtes attaqués ! Bisous 😘`;
+  } else {
+    messageContent = `🚨 ${role} vous êtes attaqués !`;
+  }
 
   await alertChannel.send({
-    content: message,
+    content: messageContent,
     allowedMentions: { roles: [role.id] }
   });
 
