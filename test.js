@@ -42,7 +42,7 @@ const guildMessages = {
   "Les Chuchoteurs": "🚨 @Les Chuchoteurs vous êtes attaqués 🧟!",
   "Ambitions": "🚨 @Ambitions vous êtes attaqués !",
   "D E S T I N Y": "🚨 @D E S T I N Y vous êtes attaqués 🕊️!",
-  "TESTAGE DE BOT": "🚨 @TESTAGE DE BOT ceci est qu'un test Bisous 😘"
+  "TESTAGE DE BOT": "🚨 @TESTAGE DE BOT ceci n' est qu'un test Bisous 😘"
 };
 
 // Cooldowns
