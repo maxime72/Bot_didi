@@ -36,7 +36,9 @@ const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
 const PANEL_CHANNEL_ID = "1404539663322054718"; // 🐎║ping-perco
 const ALERT_CHANNEL_ID = "1402339092385107999"; // 🐎║défense-perco
 
-// Liste des guildes
+// ====================
+// Guildes
+// ====================
 const guildRoles = [
   "Tempest",
   "YGGDRASIL",
@@ -49,26 +51,50 @@ const guildRoles = [
   "TESTAGE DE BOT"
 ];
 
+// ====================
+// Messages personnalisés par guilde
+// ====================
+const customMessages = {
+  "Tempest": "🚨 @Tempest vous êtes attaqués 🌪️!",
+  "YGGDRASIL": "🚨 @YGGDRASIL vous êtes attaqués !",
+  "Plus Ultra": "🚨 @Plus Ultra vous êtes attaqués !",
+  "Red Bull": "🚨 @Red Bull vous êtes attaqués !🪽",
+  "E Q U I N O X": "🚨 @E Q U I N O X vous êtes attaqués☀️ !",
+  "Les Chuchoteurs": "🚨 @Les Chuchoteurs vous êtes attaqués 🧟!",
+  "Ambitions": "🚨 @Ambitions vous êtes attaqués !",
+  "D E S T I N Y": "🚨 @D E S T I N Y vous êtes attaqués 🕊️!",
+  "TESTAGE DE BOT": "🚨 @TESTAGE DE BOT ceci est qu'un test Bisous 😘"
+};
+
+// ====================
 // Cooldowns
+// ====================
 const cooldowns = new Map();
 
-// Stats persistantes
+// ====================
+// Stats sauvegardées
+// ====================
 let stats = {};
 const STATS_FILE = "stats.json";
 
+// Charger stats si fichier existe
 if (fs.existsSync(STATS_FILE)) {
   try {
     stats = JSON.parse(fs.readFileSync(STATS_FILE, "utf8"));
-  } catch (e) {
-    console.error("⚠️ Erreur de lecture stats.json:", e);
-    stats = {};
+  } catch (err) {
+    console.error("⚠️ Erreur de lecture stats.json :", err);
   }
 }
 
+// Sauvegarde régulière
 function saveStats() {
   fs.writeFileSync(STATS_FILE, JSON.stringify(stats, null, 2));
 }
+setInterval(saveStats, 60 * 1000); // toutes les minutes
 
+// ====================
+// Client Discord
+// ====================
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -90,37 +116,38 @@ client.once(Events.ClientReady, async () => {
   const messages = await channel.messages.fetch({ limit: 10 });
   const panneauExiste = messages.some(msg => msg.content.includes("📢 **Alerte Guildes**"));
 
-  if (panneauExiste) {
+  if (!panneauExiste) {
+    const rows = [];
+    let currentRow = new ActionRowBuilder();
+
+    guildRoles.forEach((roleName, index) => {
+      const button = new ButtonBuilder()
+        .setCustomId(`alert_${roleName.replace(/\s+/g, "_")}`)
+        .setLabel(roleName)
+        .setStyle(ButtonStyle.Primary);
+
+      currentRow.addComponents(button);
+
+      if ((index + 1) % 5 === 0 || index === guildRoles.length - 1) {
+        rows.push(currentRow);
+        currentRow = new ActionRowBuilder();
+      }
+    });
+
+    await channel.send({
+      content: "📢 **Alerte Guildes**\nCliquez sur le bouton de votre guilde pour envoyer une alerte dans 🐎║défense-perco.",
+      components: rows
+    });
+
+    console.log("✅ Panneau envoyé !");
+  } else {
     console.log("ℹ️ Panneau déjà présent, aucun nouvel envoi.");
-    return;
   }
-
-  // Créer les boutons
-  const rows = [];
-  let currentRow = new ActionRowBuilder();
-
-  guildRoles.forEach((roleName, index) => {
-    const button = new ButtonBuilder()
-      .setCustomId(`alert_${roleName.replace(/\s+/g, "_")}`)
-      .setLabel(roleName)
-      .setStyle(ButtonStyle.Primary);
-
-    currentRow.addComponents(button);
-
-    if ((index + 1) % 5 === 0 || index === guildRoles.length - 1) {
-      rows.push(currentRow);
-      currentRow = new ActionRowBuilder();
-    }
-  });
-
-  await channel.send({
-    content: "📢 **Alerte Guildes**\nCliquez sur le bouton correspondant à la guilde attaquée pour envoyer une alerte dans 🐎║défense-perco.",
-    components: rows
-  });
-
-  console.log("✅ Panneau envoyé !");
 });
 
+// ====================
+// Gestion des boutons
+// ====================
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isButton()) return;
 
@@ -131,12 +158,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
     return interaction.reply({ content: `⚠️ Rôle **${roleName}** introuvable.`, flags: 64 });
   }
 
+  // Cooldown par utilisateur et par guilde
   const cooldownKey = `${interaction.user.id}_${roleName}`;
   const now = Date.now();
 
   if (cooldowns.has(cooldownKey) && now < cooldowns.get(cooldownKey)) {
     const remaining = Math.ceil((cooldowns.get(cooldownKey) - now) / 1000);
-    return interaction.reply({ content: `⏳ Attendez encore ${remaining}s avant de reping **${roleName}**.`, flags: 64 });
+    return interaction.reply({ content: `⏳ Attendez ${remaining}s avant de reping **${roleName}**.`, flags: 64 });
   }
 
   cooldowns.set(cooldownKey, now + 15000);
@@ -148,27 +176,25 @@ client.on(Events.InteractionCreate, async (interaction) => {
     return interaction.editReply({ content: "⚠️ Salon d’alerte introuvable." });
   }
 
-  // Stats
+  // Mise à jour des stats
   if (!stats[interaction.user.id]) {
     stats[interaction.user.id] = { username: interaction.member.displayName, count: 0 };
   }
   stats[interaction.user.id].count++;
   saveStats();
 
-  // Message personnalisé ou générique
-  let messageContent;
-  if (roleName === "TESTAGE DE BOT") {
-    messageContent = `🚨 ${role} est un Test, Bisous 😘`;
-  } else {
-    messageContent = `🚨 ${role} vous êtes attaqués !`;
-  }
+  // Récupérer message personnalisé ou défaut
+  const message = customMessages[roleName] || `🚨 ${role} vous êtes attaqués !`;
 
   await alertChannel.send({
-    content: messageContent,
+    content: message,
     allowedMentions: { roles: [role.id] }
   });
 
   await interaction.editReply({ content: `✅ Alerte envoyée dans ${alertChannel}` });
 });
 
+// ====================
+// Connexion
+// ====================
 client.login(process.env.DISCORD_TOKEN);
