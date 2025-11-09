@@ -28,7 +28,7 @@ const guildRoles = [
 // Messages personnalisés pour chaque guilde
 const guildMessages = {
   "Everyone": "🚨 nous sommes attaquées 🌪️!",
-  "Modérateur discord": "🚨 ceci n'est qu'un test Bisous de bot😘"
+  "Modérateur discord": "🚨 ceci n'est qu'un test de bot Bisous😘"
 };
 
 // Stats mémoire (par guilde)
