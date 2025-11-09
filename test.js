@@ -1,8 +1,11 @@
 require("dotenv").config();
 const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events } = require("discord.js");
 
-const PANEL_CHANNEL_ID = "ID_DU_SALON_PANNEAU";
-const ALERT_CHANNEL_ID = "ID_DU_SALON_ALERTES";
+// ====================
+// CONFIGURATION
+// ====================
+const PANEL_CHANNEL_ID = "ID_DU_SALON_PANNEAU"; // Remplace par ton salon panneau
+const ALERT_CHANNEL_ID = "ID_DU_SALON_ALERTES";  // Remplace par ton salon d'alerte
 
 const client = new Client({
   intents: [
@@ -12,7 +15,7 @@ const client = new Client({
   ]
 });
 
-// Cooldowns
+// Cooldowns par utilisateur
 const cooldowns = new Map();
 
 // ====================
@@ -29,7 +32,7 @@ const guilds = [
     name: "Test de bot",
     emoji: "🛡️",
     pingType: "role", // ping d’un rôle spécifique
-    roleName: "Modérateur Discord",
+    roleName: "Modérateur",
     message: "a testé le bot !"
   }
   // => Ajouter de nouvelles guildes ici facilement
@@ -42,10 +45,19 @@ client.once(Events.ClientReady, async () => {
   console.log(`✅ Connecté en tant que ${client.user.tag}`);
 
   const panelChannel = await client.channels.fetch(PANEL_CHANNEL_ID);
-  if (!panelChannel) return console.error("Salon panneau introuvable !");
+  if (!panelChannel) return console.error("⚠️ Salon panneau introuvable !");
 
+  // Vérifier si panneau déjà présent
+  const messages = await panelChannel.messages.fetch({ limit: 20 });
+  const panneauExiste = messages.some(msg => msg.content.includes("📢 **Alerte Guildes**"));
+
+  if (panneauExiste) {
+    console.log("ℹ️ Panneau déjà présent, aucun nouvel envoi.");
+    return;
+  }
+
+  // Créer les boutons dynamiquement
   const row = new ActionRowBuilder();
-
   guilds.forEach(guild => {
     row.addComponents(
       new ButtonBuilder()
@@ -59,6 +71,8 @@ client.once(Events.ClientReady, async () => {
     content: "📢 **Alerte Guildes**\nCliquez sur le bouton pour envoyer une alerte !",
     components: [row]
   });
+
+  console.log("✅ Panneau envoyé !");
 });
 
 // ====================
@@ -70,7 +84,7 @@ client.on(Events.InteractionCreate, async interaction => {
   const userId = interaction.user.id;
   const now = Date.now();
 
-  // Cooldown 5 secondes
+  // Cooldown 5 secondes par utilisateur
   if (cooldowns.has(userId)) {
     const expiration = cooldowns.get(userId);
     if (now < expiration) {
@@ -82,12 +96,12 @@ client.on(Events.InteractionCreate, async interaction => {
   const alertChannel = await interaction.guild.channels.fetch(ALERT_CHANNEL_ID);
   if (!alertChannel) return interaction.reply({ content: "⚠️ Salon d'alerte introuvable !", ephemeral: true });
 
-  // Trouver la guilde correspondante
+  // Identifier la guilde correspondant au bouton
   const guildName = interaction.customId.replace("alert_", "").replace(/_/g, " ");
   const guildConfig = guilds.find(g => g.name === guildName);
   if (!guildConfig) return interaction.reply({ content: "⚠️ Cette guilde n'est pas configurée.", ephemeral: true });
 
-  // Préparer le ping
+  // Préparer le message et les mentions
   let message;
   let allowedMentions = {};
 
@@ -105,4 +119,7 @@ client.on(Events.InteractionCreate, async interaction => {
   await interaction.reply({ content: `✅ Alerte envoyée pour **${guildName}** !`, ephemeral: true });
 });
 
+// ====================
+// LOGIN
+// ====================
 client.login(process.env.DISCORD_TOKEN);
