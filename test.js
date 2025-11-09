@@ -39,7 +39,7 @@ const guilds = [
     name: "Tempest",
     emoji: "🌪️",
     pingType: "everyone",
-    message: "annonce qu'on est attaqué Tempest! 🌪️"
+    message: "📢 annonce que Tempest est attaqué! 🌪️"
   },
   {
     name: "Test de bot",
