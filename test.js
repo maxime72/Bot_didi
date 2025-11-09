@@ -1,12 +1,25 @@
 require("dotenv").config();
+const express = require("express");
 const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events } = require("discord.js");
 
 // ====================
 // CONFIGURATION
 // ====================
-const PANEL_CHANNEL_ID = "1436997125178130462"; // Remplace par ton salon panneau
-const ALERT_CHANNEL_ID = "1377004443114934303";  // Remplace par ton salon d'alerte
+const PANEL_CHANNEL_ID = "ID_DU_SALON_PANNEAU"; // Remplace par ton salon panneau
+const ALERT_CHANNEL_ID = "ID_DU_SALON_ALERTES";  // Remplace par ton salon d'alerte
 
+// ====================
+// SERVEUR EXPRESS (Render)
+// ====================
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get("/", (req, res) => res.send("Bot Didi is running!"));
+app.listen(PORT, () => console.log(`✅ Web server running on port ${PORT}`));
+
+// ====================
+// BOT DISCORD
+// ====================
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -25,17 +38,17 @@ const guilds = [
   {
     name: "Tempest",
     emoji: "🌪️",
-    pingType: "everyone", // "everyone" pour @everyone
+    pingType: "everyone",
     message: "annonce qu'on est attaqué Tempest! 🌪️"
   },
   {
     name: "Test de bot",
     emoji: "🛡️",
-    pingType: "role", // ping d’un rôle spécifique
+    pingType: "role",
     roleName: "Modérateur discord",
     message: "a testé le bot !"
   }
-  // => Ajouter de nouvelles guildes ici facilement
+  // Ajoute facilement de nouvelles guildes ici
 ];
 
 // ====================
