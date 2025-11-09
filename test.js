@@ -4,8 +4,8 @@ const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
 // ====================
 // CONFIGURATION
 // ====================
-const PANEL_CHANNEL_ID = "ID_DU_SALON_PANNEAU"; // Remplace par ton salon panneau
-const ALERT_CHANNEL_ID = "ID_DU_SALON_ALERTES";  // Remplace par ton salon d'alerte
+const PANEL_CHANNEL_ID = "1436997125178130462"; // Remplace par ton salon panneau
+const ALERT_CHANNEL_ID = "1377004443114934303";  // Remplace par ton salon d'alerte
 
 const client = new Client({
   intents: [
