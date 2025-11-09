@@ -32,7 +32,7 @@ const guilds = [
     name: "Test de bot",
     emoji: "🛡️",
     pingType: "role", // ping d’un rôle spécifique
-    roleName: "Modérateur Discord",
+    roleName: "Modérateur discord",
     message: "a testé le bot !"
   }
   // => Ajouter de nouvelles guildes ici facilement
