@@ -1,38 +1,8 @@
-// ====================
-// Chargement des variables d'environnement
-// ====================
 require("dotenv").config();
-
-// ====================
-// SERVEUR EXPRESS (pour Render)
-// ====================
-const express = require("express");
-const app = express();
-app.get("/", (req, res) => res.send("Bot Didi is running!"));
-app.listen(3000, () => console.log("✅ Web server is running on port 3000"));
-
-// ====================
-// BOT DISCORD
-// ====================
 const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events } = require("discord.js");
 
-const PANEL_CHANNEL_ID = "1436997125178130462"; // 🐎║ping-perco
-const ALERT_CHANNEL_ID = "1377004443114934303"; // 🐎║défense-perco
-
-// Liste des guildes
-const guildRoles = [
-  "everyone",
-  "Modérateur discord"
-];
-
-// Messages personnalisés pour chaque guilde
-const guildMessages = {
-  "everyone": "🚨 nous sommes attaquées 🌪️!",
-  "Modérateur discord": "🚨 ceci n'est qu'un test de bot Bisous😘"
-};
-
-// Stats mémoire (par guilde)
-const stats = {};
+const PANEL_CHANNEL_ID = "ID_DU_SALON_PANNEAU";
+const ALERT_CHANNEL_ID = "ID_DU_SALON_ALERTES";
 
 const client = new Client({
   intents: [
@@ -42,77 +12,97 @@ const client = new Client({
   ]
 });
 
+// Cooldowns
+const cooldowns = new Map();
+
+// ====================
+// Liste dynamique des guildes / boutons
+// ====================
+const guilds = [
+  {
+    name: "Tempest",
+    emoji: "🌪️",
+    pingType: "everyone", // "everyone" pour @everyone
+    message: "annonce qu'on est attaqué Tempest! 🌪️"
+  },
+  {
+    name: "Test de bot",
+    emoji: "🛡️",
+    pingType: "role", // ping d’un rôle spécifique
+    roleName: "Modérateur Discord",
+    message: "a testé le bot !"
+  }
+  // => Ajouter de nouvelles guildes ici facilement
+];
+
+// ====================
+// Création du panneau de boutons
+// ====================
 client.once(Events.ClientReady, async () => {
   console.log(`✅ Connecté en tant que ${client.user.tag}`);
 
-  const channel = await client.channels.fetch(PANEL_CHANNEL_ID);
-  if (!channel) {
-    console.error("⚠️ Salon du panneau introuvable !");
-    return;
-  }
+  const panelChannel = await client.channels.fetch(PANEL_CHANNEL_ID);
+  if (!panelChannel) return console.error("Salon panneau introuvable !");
 
-  // Vérifier si panneau déjà présent
-  const messages = await channel.messages.fetch({ limit: 10 });
-  const panneauExiste = messages.some(msg => msg.content.includes("📢 **Alerte Guildes**"));
-  if (panneauExiste) {
-    console.log("ℹ️ Panneau déjà présent, aucun nouvel envoi.");
-    return;
-  }
+  const row = new ActionRowBuilder();
 
-  // Créer les boutons
-  const rows = [];
-  let currentRow = new ActionRowBuilder();
-
-  guildRoles.forEach((roleName, index) => {
-    const button = new ButtonBuilder()
-      .setCustomId(`alert_${roleName.replace(/\s+/g, "_")}`)
-      .setLabel(roleName)
-      .setStyle(ButtonStyle.Primary);
-
-    currentRow.addComponents(button);
-
-    if ((index + 1) % 5 === 0 || index === guildRoles.length - 1) {
-      rows.push(currentRow);
-      currentRow = new ActionRowBuilder();
-    }
+  guilds.forEach(guild => {
+    row.addComponents(
+      new ButtonBuilder()
+        .setCustomId(`alert_${guild.name.replace(/\s+/g, "_")}`)
+        .setLabel(`${guild.emoji} ${guild.name}`)
+        .setStyle(ButtonStyle.Primary)
+    );
   });
 
-  await channel.send({
-    content: "📢 **Alerte Guildes**\nCliquez sur le bouton correspondant à la guilde attaquée pour envoyer une alerte dans 🐎║défense-perco.",
-    components: rows
+  await panelChannel.send({
+    content: "📢 **Alerte Guildes**\nCliquez sur le bouton pour envoyer une alerte !",
+    components: [row]
   });
-
-  console.log("✅ Panneau envoyé !");
 });
 
+// ====================
+// Gestion des clics
+// ====================
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isButton()) return;
 
-  const guildName = interaction.customId.replace("alert_", "").replace(/_/g, " ");
+  const userId = interaction.user.id;
+  const now = Date.now();
 
-  // Stats
-  if (!stats[guildName]) stats[guildName] = { total: 0 };
-  stats[guildName].total++;
+  // Cooldown 5 secondes
+  if (cooldowns.has(userId)) {
+    const expiration = cooldowns.get(userId);
+    if (now < expiration) {
+      return interaction.reply({ content: "⏳ Merci d'attendre 5 secondes avant de cliquer à nouveau.", ephemeral: true });
+    }
+  }
+  cooldowns.set(userId, now + 5000);
 
   const alertChannel = await interaction.guild.channels.fetch(ALERT_CHANNEL_ID);
-  if (!alertChannel) return;
+  if (!alertChannel) return interaction.reply({ content: "⚠️ Salon d'alerte introuvable !", ephemeral: true });
 
-  // Mention du rôle et message personnalisé
-  const role = alertChannel.guild.roles.cache.find(r => r.name === guildName);
+  // Trouver la guilde correspondante
+  const guildName = interaction.customId.replace("alert_", "").replace(/_/g, " ");
+  const guildConfig = guilds.find(g => g.name === guildName);
+  if (!guildConfig) return interaction.reply({ content: "⚠️ Cette guilde n'est pas configurée.", ephemeral: true });
 
+  // Préparer le ping
   let message;
-  if (role) {
-    // Ici on force la mention
-    message = `${role} ${guildMessages[guildName] ? guildMessages[guildName] : "Alerte !"}`;
-  } else {
-    // Si le rôle n'existe pas
-    message = `${guildName} ${guildMessages[guildName] ? guildMessages[guildName] : "Alerte !"}`;
+  let allowedMentions = {};
+
+  if (guildConfig.pingType === "everyone") {
+    message = `@everyone <@${userId}> ${guildConfig.message}`;
+    allowedMentions = { parse: ["everyone", "users"] };
+  } else if (guildConfig.pingType === "role") {
+    const role = interaction.guild.roles.cache.find(r => r.name === guildConfig.roleName);
+    if (!role) return interaction.reply({ content: `⚠️ Le rôle ${guildConfig.roleName} n'existe pas.`, ephemeral: true });
+    message = `${role} <@${userId}> ${guildConfig.message}`;
+    allowedMentions = { roles: [role.id], users: [userId] };
   }
 
-  // Envoyer le message avec ping activé
-  await alertChannel.send({ content: message, allowedMentions: { roles: role ? [role.id] : [] } });
-
-  await interaction.reply({ content: `✅ Alerte envoyée pour **${guildName}** !`, flags: 64 });
+  await alertChannel.send({ content: message, allowedMentions });
+  await interaction.reply({ content: `✅ Alerte envoyée pour **${guildName}** !`, ephemeral: true });
 });
 
 client.login(process.env.DISCORD_TOKEN);
