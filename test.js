@@ -21,14 +21,14 @@ const ALERT_CHANNEL_ID = "1377004443114934303"; // 🐎║défense-perco
 
 // Liste des guildes
 const guildRoles = [
-  "Tempest",
-  "TESTAGE DE BOT"
+  "Everyone",
+  "Modérateur discord"
 ];
 
 // Messages personnalisés pour chaque guilde
 const guildMessages = {
-  "Tempest": "🚨 nous sommes attaquées 🌪️!",
-  "TESTAGE DE BOT": "🚨 ceci n'est qu'un test Bisous 😘"
+  "Everyone": "🚨 nous sommes attaquées 🌪️!",
+  "Modérateur discord": "🚨 ceci n'est qu'un test Bisous de bot😘"
 };
 
 // Stats mémoire (par guilde)
