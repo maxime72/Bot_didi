@@ -27,12 +27,9 @@ const guildRoles = [
 
 // Messages personnalisés pour chaque guilde
 const guildMessages = {
-    "Tempest": "🚨  nous sommes attaquées 🌪️!",
-  "TESTAGE DE BOT": "🚨 ceci n' est qu'un test Bisous 😘"
+  "Tempest": "🚨 nous sommes attaquées 🌪️!",
+  "TESTAGE DE BOT": "🚨 ceci n'est qu'un test Bisous 😘"
 };
-
-// Cooldowns
-const cooldowns = new Map();
 
 // Stats mémoire (par guilde)
 const stats = {};
@@ -92,10 +89,6 @@ client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isButton()) return;
 
   const guildName = interaction.customId.replace("alert_", "").replace(/_/g, " ");
-  const userId = interaction.user.id;
-  const now = Date.now();
-
-  
 
   // Stats
   if (!stats[guildName]) stats[guildName] = { total: 0 };
@@ -106,10 +99,19 @@ client.on(Events.InteractionCreate, async interaction => {
 
   // Mention du rôle et message personnalisé
   const role = alertChannel.guild.roles.cache.find(r => r.name === guildName);
-  const mention = role ? `<@&${role.id}>` : guildName;
-  const message = guildMessages[guildName] ? `${mention} ${guildMessages[guildName]}` : `${mention} Alerte !`;
 
-  await alertChannel.send(message);
+  let message;
+  if (role) {
+    // Ici on force la mention
+    message = `${role} ${guildMessages[guildName] ? guildMessages[guildName] : "Alerte !"}`;
+  } else {
+    // Si le rôle n'existe pas
+    message = `${guildName} ${guildMessages[guildName] ? guildMessages[guildName] : "Alerte !"}`;
+  }
+
+  // Envoyer le message avec ping activé
+  await alertChannel.send({ content: message, allowedMentions: { roles: role ? [role.id] : [] } });
+
   await interaction.reply({ content: `✅ Alerte envoyée pour **${guildName}** !`, flags: 64 });
 });
 
