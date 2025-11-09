@@ -22,26 +22,12 @@ const ALERT_CHANNEL_ID = "1402339092385107999"; // 🐎║défense-perco
 // Liste des guildes
 const guildRoles = [
   "Tempest",
-  "YGGDRASIL",
-  "Plus Ultra",
-  "Red Bull",
-  "E Q U I N O X",
-  "Les Chuchoteurs",
-  "Ambitions",
-  "D E S T I N Y",
   "TESTAGE DE BOT"
 ];
 
 // Messages personnalisés pour chaque guilde
 const guildMessages = {
-    "Tempest": "🚨  vous êtes attaqués 🌪️!",
-  "YGGDRASIL": "🚨 ALERTE AU GOGOLE !",
-  "Plus Ultra": "🚨 vous êtes attaqués !",
-  "Red Bull": "Donne des ailes 🚨  vous êtes attaqués !🪽",
-  "E Q U I N O X": "🚨 vous êtes attaqués☀️ !",
-  "Les Chuchoteurs": "🚨 🧟‍♂️ vous êtes attaqués 🧟!",
-  "Ambitions": "🚨 @Ambitions vous êtes attaqués !",
-  "D E S T I N Y": "🚨  vous êtes attaqués 🕊️!",
+    "Tempest": "🚨  nous sommes attaquées 🌪️!",
   "TESTAGE DE BOT": "🚨 ceci n' est qu'un test Bisous 😘"
 };
 
