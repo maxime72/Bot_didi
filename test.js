@@ -16,8 +16,8 @@ app.listen(3000, () => console.log("✅ Web server is running on port 3000"));
 // ====================
 const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events } = require("discord.js");
 
-const PANEL_CHANNEL_ID = "1404539663322054718"; // 🐎║ping-perco
-const ALERT_CHANNEL_ID = "1402339092385107999"; // 🐎║défense-perco
+const PANEL_CHANNEL_ID = "1436997125178130462"; // 🐎║ping-perco
+const ALERT_CHANNEL_ID = "1377004443114934303"; // 🐎║défense-perco
 
 // Liste des guildes
 const guildRoles = [
