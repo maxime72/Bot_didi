@@ -21,13 +21,13 @@ const ALERT_CHANNEL_ID = "1377004443114934303"; // 🐎║défense-perco
 
 // Liste des guildes
 const guildRoles = [
-  "Everyone",
+  "everyone",
   "Modérateur discord"
 ];
 
 // Messages personnalisés pour chaque guilde
 const guildMessages = {
-  "Everyone": "🚨 nous sommes attaquées 🌪️!",
+  "everyone": "🚨 nous sommes attaquées 🌪️!",
   "Modérateur discord": "🚨 ceci n'est qu'un test de bot Bisous😘"
 };
 
