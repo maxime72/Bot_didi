@@ -36,7 +36,7 @@ const serverConfig = {
   },
 
   // DIDI ALLIANCE
-  "1199715671534206986": {
+  "1439715441886105653": {
     panelChannel: "1439721925457739796",
     alertChannel: "1439722050406191124",
     guildButtons: [
