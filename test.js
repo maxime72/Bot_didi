@@ -48,10 +48,10 @@ const serverConfig = {
         message: "annonce que Tempest est attaqué !"
       },
       {
-        name: "La Main du Néant",
+        name: "La Main Du Néant",
         emoji: "🕳️",
         pingType: "role",
-        roleName: "La Main du Néant",
+        roleName: "La Main Du Néant",
         message: "annonce que La Main du Néant est attaquée !"
       },
       {
