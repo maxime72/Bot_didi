@@ -48,11 +48,11 @@ const serverConfig = {
         message: "annonce que Tempest est attaqué !"
       },
       {
-        name: "Gold Moon",
-        emoji: "🌕",
+        name: "La Main du Néant",
+        emoji: "🕳️",
         pingType: "role",
-        roleName: "Gold Moon",
-        message: "annonce que Gold Moon est attaqué !"
+        roleName: "La Main du Néant",
+        message: "annonce que La Main du Néant est attaquée !"
       },
       {
         name: "G Squad",
