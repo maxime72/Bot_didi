@@ -45,21 +45,21 @@ const serverConfig = {
         emoji: "🌪️",
         pingType: "role",
         roleName: "Tempest",
-        message: "annonce que Tempest est attaqué !"
+        message: "📢annonce que Tempest est attaqué !🌪️"
       },
       {
         name: "La Main Du Néant",
         emoji: "🕳️",
         pingType: "role",
         roleName: "La Main Du Néant",
-        message: "annonce que La Main du Néant est attaquée !"
+        message: "📢annonce que La Main du Néant est attaquée !🕳️"
       },
       {
         name: "G Squad",
         emoji: "🔫",
         pingType: "role",
         roleName: "G Squad",
-        message: "annonce que G Squad est attaqué !"
+        message: "📢annonce que G Squad est attaqué !🔫"
       }
     ]
   }
