@@ -60,6 +60,13 @@ const serverConfig = {
         pingType: "role",
         roleName: "G Squad",
         message: "📢annonce que G Squad est attaqué !🔫"
+      },
+      {
+        name: "Smile",
+        emoji: "😊",
+        pingType: "role",
+        roleName: "Smile",
+        message: "📢annonce que Smile est attaqué !😊"
       }
     ]
   }
