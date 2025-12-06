@@ -1,4 +1,4 @@
-require("dotenv").config();
+krequire("dotenv").config();
 const express = require("express");
 const { 
   Client, 
@@ -53,13 +53,6 @@ const serverConfig = {
         pingType: "role",
         roleName: "La Main Du Néant",
         message: "📢annonce que La Main du Néant est attaquée !🕳️"
-      },
-      {
-        name: "G Squad",
-        emoji: "🔫",
-        pingType: "role",
-        roleName: "G Squad",
-        message: "📢annonce que G Squad est attaqué !🔫"
       },
       {
         name: "Smile",
