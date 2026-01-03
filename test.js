@@ -14,6 +14,7 @@ const {
 // CONFIG DES SERVEURS
 // ============================
 const serverConfig = {
+  // Exemple de serveur
   "1199715671534206986": {
     panelChannel: "1436997125178130462",
     alertChannel: "1377004443114934303",
@@ -37,7 +38,7 @@ const PORT = process.env.PORT || 3000;
 app.get("/", (req, res) => res.send("Bot Didi is running!"));
 app.listen(PORT, () => console.log(`✅ Web server running on port ${PORT}`));
 
-// Optionnel : ping automatique si tu n’utilises pas Uptime Robot
+// Optionnel : ping interne pour garder le service actif si pas d’Uptime Robot
 setInterval(() => {
   fetch(`http://localhost:${PORT}`)
     .then(() => console.log("Ping interne effectué"))
@@ -76,11 +77,11 @@ client.once(Events.ClientReady, async () => {
         continue;
       }
 
-      // Test envoi message
+      // Test envoi message simple
       await panelChannel.send("🧪 Test bot en ligne !");
       console.log(`✅ Message test envoyé sur ${guild.name}`);
 
-      // Crée les boutons
+      // Crée les boutons pour le panneau
       const row = new ActionRowBuilder();
       cfg.guildButtons.forEach(g => {
         row.addComponents(
@@ -118,6 +119,7 @@ client.on(Events.InteractionCreate, async interaction => {
   const userId = interaction.user.id;
   const now = Date.now();
 
+  // Cooldown 5 secondes
   if (cooldowns.has(userId) && now < cooldowns.get(userId)) {
     return interaction.reply({ content: "⏳ Attends 5 secondes avant de réutiliser le bouton.", ephemeral: true });
   }
