@@ -1,8 +1,3 @@
-console.log("🚀 Script lancé");
-
-client.on("ready", () => {
-  console.log("🟢 BOT CONNECTÉ :", client.user.tag);
-});
 require("dotenv").config();
 const express = require("express");
 const { 
