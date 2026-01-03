@@ -1,3 +1,5 @@
+console.log("TOKEN PRESENT ?", !!process.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN);
 require("dotenv").config();
 const express = require("express");
 const { 
