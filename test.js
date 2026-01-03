@@ -1,3 +1,4 @@
+console.log("DISCORD_TOKEN =", process.env.DISCORD_TOKEN);
 require("dotenv").config();
 const express = require("express");
 const { 
