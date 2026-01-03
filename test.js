@@ -1,4 +1,8 @@
-console.log("DISCORD_TOKEN =", process.env.DISCORD_TOKEN);
+console.log("🚀 Script lancé");
+
+client.on("ready", () => {
+  console.log("🟢 BOT CONNECTÉ :", client.user.tag);
+});
 require("dotenv").config();
 const express = require("express");
 const { 
