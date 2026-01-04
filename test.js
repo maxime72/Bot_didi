@@ -1,35 +1,20 @@
 require("dotenv").config();
 const express = require("express");
-const {
-  Client,
-  GatewayIntentBits,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  Events
+const { 
+  Client, 
+  GatewayIntentBits, 
+  ActionRowBuilder, 
+  ButtonBuilder, 
+  ButtonStyle, 
+  Events 
 } = require("discord.js");
-
-console.log("🚀 Script lancé");
-console.log("TOKEN PRESENT ?", !!process.env.DISCORD_TOKEN);
-
-// ============================
-// SERVEUR EXPRESS (OBLIGATOIRE POUR FLY.IO)
-// ============================
-const app = express();
-const PORT = process.env.PORT || 8080;
-
-app.get("/", (req, res) => {
-  res.send("Bot Didi is running!");
-});
-
-app.listen(PORT, () => {
-  console.log(`🌍 Web server running on port ${PORT}`);
-});
 
 // ============================
 // CONFIG DES SERVEURS
 // ============================
+
 const serverConfig = {
+  // DIDI GUILDE
   "1199715671534206986": {
     panelChannel: "1436997125178130462",
     alertChannel: "1377004443114934303",
@@ -50,6 +35,7 @@ const serverConfig = {
     ]
   },
 
+  // DIDI ALLIANCE
   "1439715441886105653": {
     panelChannel: "1439721925457739796",
     alertChannel: "1439722050406191124",
@@ -80,6 +66,15 @@ const serverConfig = {
 };
 
 // ============================
+// SERVEUR EXPRESS
+// ============================
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get("/", (req, res) => res.send("Bot Didi is running!"));
+app.listen(PORT, () => console.log(`✅ Web server running on port ${PORT}`));
+
+// ============================
 // CLIENT DISCORD
 // ============================
 const client = new Client({
@@ -93,8 +88,9 @@ const client = new Client({
 const cooldowns = new Map();
 
 // ============================
-// PANNEAUX
+// Panneaux pour chaque serveur
 // ============================
+
 client.once(Events.ClientReady, async () => {
   console.log(`✅ Connecté en tant que ${client.user.tag}`);
 
@@ -104,15 +100,20 @@ client.once(Events.ClientReady, async () => {
     try {
       const guild = await client.guilds.fetch(guildId);
       const panelChannel = await guild.channels.fetch(cfg.panelChannel);
-      if (!panelChannel) continue;
+      if (!panelChannel) {
+        console.log(`⚠️ Salon panneau introuvable pour ${guild.name}`);
+        continue;
+      }
 
       const messages = await panelChannel.messages.fetch({ limit: 20 });
-      const panneauExiste = messages.some(m =>
-        m.content.includes("📢 **Alerte Guildes**")
-      );
+      const panneauExiste = messages.some(m => m.content.includes("📢 **Alerte Guildes**"));
 
-      if (panneauExiste) continue;
+      if (panneauExiste) {
+        console.log(`ℹ️ Panneau déjà en place sur ${guild.name}`);
+        continue;
+      }
 
+      // Crée les boutons spécifiques au serveur
       const row = new ActionRowBuilder();
       cfg.guildButtons.forEach(g => {
         row.addComponents(
@@ -129,8 +130,9 @@ client.once(Events.ClientReady, async () => {
       });
 
       console.log(`✅ Panneau envoyé sur ${guild.name}`);
+
     } catch (err) {
-      console.error(`❌ Erreur pour ${guildId}`, err);
+      console.error(`❌ Erreur pour ${guildId} :`, err);
     }
   }
 });
@@ -138,69 +140,51 @@ client.once(Events.ClientReady, async () => {
 // ============================
 // GESTION DES CLICS
 // ============================
+
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isButton()) return;
 
   const guildId = interaction.guild.id;
   const cfg = serverConfig[guildId];
-  if (!cfg) return;
+  if (!cfg) return interaction.reply({ content: "⚠️ Serveur non configuré.", ephemeral: true });
 
   const userId = interaction.user.id;
   const now = Date.now();
 
+  // Cooldown 5 secondes
   if (cooldowns.has(userId) && now < cooldowns.get(userId)) {
-    return interaction.reply({
-      content: "⏳ Attends 5 secondes avant de réutiliser le bouton.",
-      ephemeral: true
-    });
+    return interaction.reply({ content: "⏳ Attends 5 secondes avant de réutiliser le bouton.", ephemeral: true });
   }
   cooldowns.set(userId, now + 5000);
 
   const alertChannel = await interaction.guild.channels.fetch(cfg.alertChannel);
-  if (!alertChannel) return;
+  if (!alertChannel) return interaction.reply({ content: "⚠️ Salon d'alerte introuvable.", ephemeral: true });
 
-  const btnName = interaction.customId
-    .replace("alert_", "")
-    .replace(/_[0-9]+$/, "")
-    .replace(/_/g, " ");
-
+  // Trouver le bon bouton
+  const btnName = interaction.customId.replace(/alert_/, "").replace(/_[0-9]+$/, "").replace(/_/g, " ");
   const guildBtn = cfg.guildButtons.find(b => b.name === btnName);
-  if (!guildBtn) return;
+
+  if (!guildBtn) return interaction.reply({ content: "⚠️ Bouton non configuré.", ephemeral: true });
 
   let message;
-  let allowedMentions;
+  let allowedMentions = {};
 
   if (guildBtn.pingType === "everyone") {
     message = `@everyone <@${userId}> ${guildBtn.message}`;
     allowedMentions = { parse: ["everyone", "users"] };
   } else {
-    const role = interaction.guild.roles.cache.find(
-      r => r.name === guildBtn.roleName
-    );
-    if (!role) {
-      return interaction.reply({
-        content: `⚠️ Rôle ${guildBtn.roleName} introuvable.`,
-        ephemeral: true
-      });
-    }
+    const role = interaction.guild.roles.cache.find(r => r.name === guildBtn.roleName);
+    if (!role) return interaction.reply({ content: `⚠️ Rôle ${guildBtn.roleName} introuvable.`, ephemeral: true });
 
     message = `${role} <@${userId}> ${guildBtn.message}`;
     allowedMentions = { roles: [role.id], users: [userId] };
   }
 
   await alertChannel.send({ content: message, allowedMentions });
-  await interaction.reply({
-    content: `✅ Alerte envoyée pour **${btnName}** !`,
-    ephemeral: true
-  });
+  await interaction.reply({ content: `✅ Alerte envoyée pour **${btnName}** !`, ephemeral: true });
 });
 
 // ============================
-// LOGIN DISCORD
+// LOGIN
 // ============================
-if (!process.env.DISCORD_TOKEN) {
-  console.error("❌ DISCORD_TOKEN manquant");
-  process.exit(1);
-}
-
 client.login(process.env.DISCORD_TOKEN);
