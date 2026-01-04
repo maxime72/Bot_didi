@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for bot-didi on 2026-01-04T15:32:42Z
+# fly.toml app configuration file generated for bot-didi-6dlzsg on 2026-01-04T15:43:04Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'bot-didi'
+app = 'bot-didi-6dlzsg'
 primary_region = 'cdg'
 
 [build]
